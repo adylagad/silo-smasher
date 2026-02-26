@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Send, Sparkles, Loader2, Search, RotateCcw,
@@ -142,19 +142,20 @@ const ThinkingOrb = ({ currentStep }) => (
 )
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function InvestigatePanel() {
+export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 }) {
   const [query, setQuery]           = useState('')
   const [status, setStatus]         = useState('idle')
   const [activeStep, setActiveStep] = useState(-1)
   const [result, setResult]         = useState(null)
   const feedRef                     = useRef(null)
   const inputRef                    = useRef(null)
+  const lastAutoRunSignalRef        = useRef(autoRunSignal)
 
   useEffect(() => {
     if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
   }, [activeStep, result])
 
-  const runQuery = async (q) => {
+  const runQuery = useCallback(async (q) => {
     const text = (q ?? query).trim()
     if (!text || status === 'running') return
 
@@ -188,7 +189,18 @@ export default function InvestigatePanel() {
       setActiveStep(STEPS.length)
       setStatus('error')
     }
-  }
+  }, [query, status])
+
+  useEffect(() => {
+    if (!initialQuery?.trim()) return
+    setQuery(initialQuery)
+  }, [initialQuery])
+
+  useEffect(() => {
+    if (!autoRunSignal || autoRunSignal === lastAutoRunSignalRef.current) return
+    lastAutoRunSignalRef.current = autoRunSignal
+    if (initialQuery?.trim()) runQuery(initialQuery)
+  }, [autoRunSignal, initialQuery, runQuery])
 
   const reset = () => {
     setStatus('idle')
