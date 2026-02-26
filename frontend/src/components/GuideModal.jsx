@@ -5,27 +5,27 @@ const STEPS = [
   {
     icon: Activity,
     title: 'Describe the anomaly',
-    body: 'Type a plain-English question about any metric drop, revenue miss, or churn spike. Use a preset to see a live example.',
+    body: 'Start with plain language: revenue dip, churn spike, or conversion miss. The system turns this into a structured diagnostic objective.',
   },
   {
     icon: Database,
-    title: 'Hypothesis generation',
-    body: 'GPT-4o reads the query and generates ranked hypotheses — possible causes sorted by plausibility based on domain knowledge.',
+    title: 'Generate hypotheses',
+    body: 'The orchestrator drafts likely explanations and prioritizes them by causal plausibility before any heavy querying starts.',
   },
   {
     icon: Share2,
-    title: 'Knowledge graph traversal',
-    body: 'Neo4j GraphRAG traverses your entity graph to find which regions, SKUs, or campaigns are connected to the affected metric.',
+    title: 'Traverse relationships',
+    body: 'Graph traversal links customers, orders, tickets, and regions to expose which entities are truly connected to the metric movement.',
   },
   {
     icon: Globe,
-    title: 'External economic signals',
-    body: 'Tavily Search fetches live news and macro signals — currency moves, competitor pricing, or regional events that may explain the drop.',
+    title: 'Cross-check outside signals',
+    body: 'External context is pulled in for weather, macroeconomics, market news, and competitive movement that may explain local variance.',
   },
   {
     icon: ShieldCheck,
-    title: 'Safety scoring & brief',
-    body: 'Fastino Safety scores each hypothesis for factual grounding and removes speculative claims before composing the final brief.',
+    title: 'Score and summarize',
+    body: 'Guardrails filter weak claims. You get a concise confidence-scored brief and recommended next actions.',
   },
 ]
 
@@ -35,7 +35,7 @@ export default function GuideModal({ open, onClose }) {
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-[#02060d]/78 backdrop-blur-sm z-40"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -43,30 +43,27 @@ export default function GuideModal({ open, onClose }) {
           />
 
           <motion.div
-            className="fixed inset-y-0 right-0 w-full max-w-[400px] bg-[#090d0c] border-l border-white/[0.06] z-50 flex flex-col shadow-2xl"
+            className="fixed inset-y-0 right-0 w-full max-w-[420px] bg-[#07111d]/96 border-l border-slate-300/20 z-50 flex flex-col shadow-[0_30px_80px_rgba(2,6,14,0.8)]"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
           >
-            {/* Teal accent top bar */}
-            <div className="h-0.5 w-full bg-gradient-to-r from-teal-500/70 via-teal-400/30 to-transparent flex-shrink-0" />
+            <div className="h-0.5 w-full bg-gradient-to-r from-sky-300/70 via-cyan-300/40 to-transparent flex-shrink-0" />
 
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05] flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300/20 flex-shrink-0">
               <div>
-                <h2 className="text-sm font-bold text-white">How Silo Smasher Works</h2>
-                <p className="text-[11px] text-zinc-600 mt-0.5">5-step autonomous investigation pipeline</p>
+                <h2 className="text-sm font-extrabold text-white">How The Diagnostic Loop Works</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Five automated stages from signal to explanation</p>
               </div>
               <button
                 onClick={onClose}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.06] transition-colors"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-200/10 transition-colors"
               >
-                <X size={13} />
+                <X size={14} />
               </button>
             </div>
 
-            {/* Steps */}
             <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-0">
               {STEPS.map((step, i) => {
                 const Icon = step.icon
@@ -78,44 +75,41 @@ export default function GuideModal({ open, onClose }) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: i * 0.07 }}
                   >
-                    {/* Icon + connector */}
                     <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
-                        <Icon size={14} className="text-teal-400" />
+                      <div className="w-8 h-8 rounded-xl bg-sky-400/14 border border-sky-300/25 flex items-center justify-center shrink-0">
+                        <Icon size={14} className="text-sky-300" />
                       </div>
                       {i < STEPS.length - 1 && (
-                        <div className="w-px flex-1 bg-white/[0.05] my-1.5" />
+                        <div className="w-px flex-1 bg-slate-300/20 my-1.5" />
                       )}
                     </div>
 
-                    {/* Text */}
                     <div className={`flex-1 ${i < STEPS.length - 1 ? 'pb-4' : ''}`}>
                       <div className="flex items-center gap-2 mb-1 mt-1.5">
-                        <span className="text-[9px] font-bold text-zinc-700 bg-white/[0.04] border border-white/[0.06] rounded px-1.5 py-0.5 tabular-nums">
+                        <span className="text-[9px] font-bold text-slate-300 bg-slate-300/10 border border-slate-300/20 rounded px-1.5 py-0.5 tabular-nums">
                           {i + 1}
                         </span>
-                        <span className="text-xs font-semibold text-zinc-200">{step.title}</span>
+                        <span className="text-xs font-bold text-slate-100">{step.title}</span>
                       </div>
-                      <p className="text-[11px] text-zinc-500 leading-relaxed">{step.body}</p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{step.body}</p>
                     </div>
                   </motion.div>
                 )
               })}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-white/[0.05] flex-shrink-0 space-y-2.5">
-              <div className="rounded-xl bg-teal-500/[0.07] border border-teal-500/15 p-3">
-                <p className="text-[11px] text-zinc-400 leading-relaxed">
-                  <span className="font-semibold text-teal-300">Tip:</span>{' '}
-                  Use the preset questions on the investigation screen to see a complete end-to-end run.
+            <div className="px-5 py-4 border-t border-slate-300/20 flex-shrink-0 space-y-2.5">
+              <div className="rounded-xl bg-sky-400/10 border border-sky-300/20 p-3">
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  <span className="font-bold text-sky-200">Tip:</span>{' '}
+                  Use the chart filters first, then open chat to investigate the exact interval where the anomaly starts.
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="w-full h-9 rounded-xl bg-teal-600 hover:bg-teal-500 text-black text-xs font-bold transition-colors shadow-lg shadow-teal-600/20"
+                className="w-full h-9 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 text-xs font-extrabold transition-opacity hover:opacity-95"
               >
-                Start Investigating
+                Start Investigation
               </button>
             </div>
           </motion.div>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Send, Sparkles, Loader2, Search, RotateCcw,
+  Sparkles, Loader2, Search, RotateCcw,
   CheckCircle2, AlertCircle, HelpCircle, ArrowRight,
   Activity,
 } from 'lucide-react'
@@ -25,25 +25,25 @@ const StepPipeline = ({ activeStep }) => (
             <motion.div
               className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors duration-500
                 ${state === 'done'
-                  ? 'bg-teal-500 border-teal-400 shadow-lg shadow-teal-500/25'
+                  ? 'bg-sky-400 border-sky-300 shadow-lg shadow-sky-400/25'
                   : state === 'active'
-                  ? 'bg-teal-500/12 border-teal-500/70'
+                  ? 'bg-sky-400/12 border-sky-400/70'
                   : 'bg-white/[0.02] border-white/[0.07]'}`}
               animate={state === 'active'
-                ? { boxShadow: ['0 0 0 0px rgba(20,184,166,0.4)', '0 0 0 7px rgba(20,184,166,0)', '0 0 0 0px rgba(20,184,166,0)'] }
+                ? { boxShadow: ['0 0 0 0px rgba(56,189,248,0.4)', '0 0 0 7px rgba(56,189,248,0)', '0 0 0 0px rgba(56,189,248,0)'] }
                 : {}}
               transition={{ duration: 1.6, repeat: Infinity }}
             >
               {state === 'done'
                 ? <CheckCircle2 size={14} className="text-black" />
                 : state === 'active'
-                ? <Loader2 size={12} className="text-teal-400 animate-spin" />
+                ? <Loader2 size={12} className="text-sky-300 animate-spin" />
                 : <span className="text-[9px] font-bold text-zinc-700">{i + 1}</span>
               }
             </motion.div>
             <span className={`text-[9px] font-medium text-center leading-tight w-16
               ${state === 'pending' ? 'text-zinc-700'
-                : state === 'active' ? 'text-teal-300 font-semibold'
+                : state === 'active' ? 'text-sky-200 font-semibold'
                 : 'text-zinc-500'}`}>
               {step.short}
             </span>
@@ -54,7 +54,7 @@ const StepPipeline = ({ activeStep }) => (
           {i < STEPS.length - 1 && (
             <motion.div
               className="flex-1 h-px mx-1.5 mb-[26px]"
-              style={{ background: activeStep > i ? 'rgba(20,184,166,0.4)' : 'rgba(255,255,255,0.05)' }}
+              style={{ background: activeStep > i ? 'rgba(56,189,248,0.4)' : 'rgba(255,255,255,0.05)' }}
             />
           )}
         </div>
@@ -117,13 +117,13 @@ const ThinkingOrb = ({ currentStep }) => (
       {[0, 0.55, 1.1].map((delay, i) => (
         <motion.div
           key={i}
-          className="absolute inset-0 rounded-full border border-teal-500/20"
+          className="absolute inset-0 rounded-full border border-sky-400/20"
           animate={{ scale: [1, 2.8], opacity: [0.5, 0] }}
           transition={{ duration: 2.2, delay, repeat: Infinity, ease: 'easeOut' }}
         />
       ))}
-      <div className="absolute inset-0 rounded-full bg-teal-500/12 border border-teal-500/35 flex items-center justify-center">
-        <Activity size={20} className="text-teal-400" />
+      <div className="absolute inset-0 rounded-full bg-sky-400/12 border border-sky-400/35 flex items-center justify-center">
+        <Activity size={20} className="text-sky-300" />
       </div>
     </div>
     <div className="text-sm text-zinc-500 text-center">
@@ -231,10 +231,10 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.08 }}
             >
-              <div className="w-7 h-7 rounded-xl bg-teal-500/12 border border-teal-500/22 flex items-center justify-center">
-                <Activity size={13} className="text-teal-400" />
+              <div className="w-7 h-7 rounded-xl bg-sky-400/12 border border-sky-400/22 flex items-center justify-center">
+                <Activity size={13} className="text-sky-300" />
               </div>
-              <span className="text-[10px] font-semibold text-teal-400/70 tracking-widest uppercase">
+              <span className="text-[10px] font-semibold text-sky-300/70 tracking-widest uppercase">
                 Autonomous Root-Cause Analysis
               </span>
             </motion.div>
@@ -295,7 +295,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                   <button
                     onClick={() => runQuery()}
                     disabled={!query.trim()}
-                    className="flex items-center gap-1.5 h-7 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-25 disabled:cursor-not-allowed text-black text-xs font-bold transition-all duration-200 shadow-lg shadow-teal-600/20"
+                    className="flex items-center gap-1.5 h-7 px-3.5 rounded-xl bg-sky-400 hover:bg-sky-400 disabled:opacity-25 disabled:cursor-not-allowed text-black text-xs font-bold transition-all duration-200 shadow-lg shadow-sky-400/20"
                   >
                     Analyze
                     <ArrowRight size={11} />
@@ -318,7 +318,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                   onClick={() => { setQuery(p); runQuery(p) }}
                   className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-200 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.13] rounded-full px-3 py-1.5 transition-all duration-200"
                 >
-                  <Sparkles size={9} className="text-teal-400/50" />
+                  <Sparkles size={9} className="text-sky-300/50" />
                   {p.length > 50 ? p.slice(0, 50) + '…' : p}
                 </button>
               ))}
@@ -388,15 +388,15 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                   {/* Brief */}
                   {result?.brief && (
                     <motion.div
-                      className="rounded-2xl border border-teal-500/18 overflow-hidden"
-                      style={{ background: 'linear-gradient(135deg, rgba(20,184,166,0.07) 0%, rgba(6,182,212,0.04) 100%)' }}
+                      className="rounded-2xl border border-sky-400/18 overflow-hidden"
+                      style={{ background: 'linear-gradient(135deg, rgba(56,189,248,0.07) 0%, rgba(6,182,212,0.04) 100%)' }}
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4 }}
                     >
-                      <div className="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-teal-500/10">
-                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-teal-400 to-cyan-500" />
-                        <span className="text-[10px] font-semibold text-teal-300/70 uppercase tracking-widest">
+                      <div className="flex items-center gap-2 px-5 pt-4 pb-3 border-b border-sky-400/10">
+                        <div className="w-1 h-4 rounded-full bg-gradient-to-b from-sky-300 to-cyan-500" />
+                        <span className="text-[10px] font-semibold text-sky-200/70 uppercase tracking-widest">
                           Summary
                         </span>
                       </div>
