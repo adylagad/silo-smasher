@@ -196,6 +196,83 @@ const normalizeDiagnosticResult = (payload) => {
   }
 }
 
+const EvidencePanel = ({ toolOutputs }) => {
+  if (!toolOutputs || typeof toolOutputs !== 'object') return null
+
+  const sqlStatusRows = Array.isArray(toolOutputs?.sql_status?.rows)
+    ? toolOutputs.sql_status.rows
+    : []
+  const sqlRevenueRows = Array.isArray(toolOutputs?.sql_revenue?.rows)
+    ? toolOutputs.sql_revenue.rows
+    : []
+  const internalRows = Array.isArray(toolOutputs?.internal_signals?.results)
+    ? toolOutputs.internal_signals.results
+    : []
+
+  if (!sqlStatusRows.length && !sqlRevenueRows.length && !internalRows.length) return null
+
+  const statusMap = {}
+  for (const row of sqlStatusRows) {
+    if (!row || typeof row !== 'object') continue
+    const key = String(row.status || '').toLowerCase()
+    if (!key) continue
+    statusMap[key] = row.event_count ?? row.count ?? 0
+  }
+  const topRegion = sqlRevenueRows[0] && typeof sqlRevenueRows[0] === 'object' ? sqlRevenueRows[0] : null
+
+  return (
+    <motion.div
+      className="rounded-2xl border border-white/[0.07] bg-white/[0.018] p-5"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: 0.12 }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1 h-4 rounded-full bg-sky-300" />
+        <span className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">
+          Evidence
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">SQL</div>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {['purchased', 'returned', 'carted'].map((key) => (
+              <span key={key} className="text-[10px] px-2 py-1 rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-300">
+                {key}: {statusMap[key] ?? 0}
+              </span>
+            ))}
+          </div>
+          {topRegion && (
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Top region: <span className="text-zinc-200">{String(topRegion.country_code || 'n/a')}</span>{' '}
+              ({topRegion.purchased_revenue ?? 0} revenue)
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Internal Signals</div>
+          <div className="flex flex-col gap-2">
+            {internalRows.slice(0, 2).map((item) => (
+              <div key={item.message_id || item.timestamp} className="text-[11px] text-zinc-300 leading-relaxed">
+                <div className="text-zinc-500 text-[10px]">
+                  {item.channel || 'channel'} · {item.timestamp || 'time'}
+                </div>
+                <div className="line-clamp-2">{item.text || 'No message text'}</div>
+              </div>
+            ))}
+            {!internalRows.length && (
+              <div className="text-[11px] text-zinc-500">No internal matches found.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 }) {
   const [query, setQuery]           = useState('')
@@ -491,6 +568,8 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                       </div>
                     </div>
                   )}
+
+                  <EvidencePanel toolOutputs={result?.tool_outputs} />
 
                   {/* Actions */}
                   {result?.actions?.length > 0 && (
