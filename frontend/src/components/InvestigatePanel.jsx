@@ -141,6 +141,61 @@ const ThinkingOrb = ({ currentStep }) => (
   </div>
 )
 
+const normalizeDiagnosticResult = (payload) => {
+  const providerFailure =
+    payload &&
+    payload.error === 'all_providers_failed' &&
+    payload.fallback_response &&
+    typeof payload.fallback_response === 'object'
+
+  const base = providerFailure ? payload.fallback_response : payload
+  if (!base || typeof base !== 'object') return payload
+
+  const rawHypotheses = Array.isArray(base.hypotheses) ? base.hypotheses : []
+  const hypotheses = rawHypotheses.map((item) => {
+    const source = item && typeof item === 'object' ? item : {}
+    const rawConfidence = source.confidence
+    const confidencePct = typeof rawConfidence === 'number'
+      ? (rawConfidence <= 1 ? rawConfidence * 100 : rawConfidence)
+      : 0
+    const normalizedStatus = ['supported', 'rejected', 'inconclusive'].includes(source.status)
+      ? source.status
+      : 'inconclusive'
+    const evidence = Array.isArray(source.evidence)
+      ? source.evidence.filter((v) => typeof v === 'string')
+      : []
+    return {
+      title: source.title || source.name || 'Hypothesis',
+      status: normalizedStatus,
+      confidence: Math.max(0, Math.min(100, Math.round(confidencePct))),
+      sources: evidence.slice(0, 3),
+    }
+  })
+
+  const actions = Array.isArray(base.actions)
+    ? base.actions.filter((value) => typeof value === 'string')
+    : Array.isArray(base.recommended_next_queries)
+      ? base.recommended_next_queries.filter((value) => typeof value === 'string')
+      : []
+
+  const briefCandidates = [
+    base.brief,
+    base.metric_summary,
+    base.most_likely_root_cause,
+  ]
+  const brief = briefCandidates.find((value) => typeof value === 'string' && value.trim()) ||
+    'Investigation completed in fallback mode with available local context.'
+
+  return {
+    ...base,
+    brief,
+    hypotheses,
+    actions,
+    degraded_mode: providerFailure,
+    provider_attempts: providerFailure ? payload.attempts : undefined,
+  }
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 }) {
   const [query, setQuery]           = useState('')
@@ -181,9 +236,10 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
         body: JSON.stringify({ question: text }),
       })
       const data = await res.json()
-      setResult(data)
+      const normalized = normalizeDiagnosticResult(data)
+      setResult(normalized)
       setActiveStep(STEPS.length)
-      setStatus('done')
+      setStatus(normalized?.error ? 'error' : 'done')
     } catch {
       setResult({ error: 'Could not reach the API. Is the backend running?' })
       setActiveStep(STEPS.length)
@@ -369,6 +425,18 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               {/* Results */}
               {(status === 'done' || status === 'error') && (
                 <div className="flex flex-col gap-4">
+
+                  {result?.degraded_mode && (
+                    <motion.div
+                      className="rounded-xl border border-amber-400/25 bg-amber-500/8 px-4 py-3"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <p className="text-xs text-amber-200/85">
+                        Provider APIs were unavailable, so this response uses resilient fallback mode.
+                      </p>
+                    </motion.div>
+                  )}
 
                   {/* Error */}
                   {result?.error && (

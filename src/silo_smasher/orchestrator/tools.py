@@ -217,8 +217,14 @@ class DiagnosticToolRuntime:
                                 "Named (:name) or positional (?) SQL parameters."
                             ),
                             "oneOf": [
-                                {"type": "object"},
-                                {"type": "array"},
+                                {
+                                    "type": "object",
+                                    "additionalProperties": True,
+                                },
+                                {
+                                    "type": "array",
+                                    "items": {},
+                                },
                             ],
                         },
                         "max_rows": {"type": "integer", "minimum": 1, "maximum": 500},
