@@ -1,9 +1,10 @@
 # Airbyte Synthetic Data Pipeline
 
-Pipeline for two jobs:
+Pipeline for three jobs:
 
 1. Create/reuse a synthetic Airbyte source and run syncs.
-2. Normalize raw records into deterministic `agent_ready_context` JSON and optionally publish both raw + normalized documents to Senso as a verifiable System of Record.
+2. Normalize raw records into deterministic `agent_ready_context` JSON (System of Record).
+3. Load entities into Neo4j AuraDB and run GraphRAG with AWS Bedrock embeddings.
 
 ## Project Layout
 
@@ -13,21 +14,24 @@ airbyte-synthetic-data-pipeline/
     raw_snapshots/
     agent_context/
     receipts/
-    manifest.jsonl                # generated on runs
+    manifest.jsonl
   examples/
-    synthetic_raw_bundle.json     # sample raw input
+    synthetic_raw_bundle.json
   src/airbyte_synthetic_data_pipeline/
     context/
-      normalize.py                # raw -> agent_ready_context
-      schemas.py                  # schema metadata
     senso/
-      client.py                   # Senso API wrapper
-      publish.py                  # upload + verification receipt
+    graph/
+      config.py
+      bedrock_embedder.py
+      store.py
+      graphrag.py
     pipeline/
-      ground_truth.py             # orchestration
+      ground_truth.py
     cli/
-      build_agent_context.py      # main context CLI
-    synthetic_sync.py             # Airbyte setup/sync CLI
+      build_agent_context.py
+      sync_graph_context.py
+      query_graph_rag.py
+    synthetic_sync.py
 ```
 
 ## Setup
@@ -53,67 +57,81 @@ python -m airbyte_synthetic_data_pipeline.synthetic_sync --source-name catalog-s
 ```bash
 cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
 source .venv/bin/activate
-python -m airbyte_synthetic_data_pipeline.cli.build_agent_context \
-  --input examples/synthetic_raw_bundle.json \
-  --source-name airbyte_synthetic_source
+build-agent-context --input examples/synthetic_raw_bundle.json --source-name airbyte_synthetic_source
 ```
-
-Outputs are written under `data/system_of_record/`:
-
-- `raw_snapshots/*.json`
-- `agent_context/*.json`
-- `manifest.jsonl`
 
 Accepted input formats:
 
 - Bundle JSON with keys `users`, `products`, `purchases`
-- Airbyte message JSON (`RECORD` messages), either as a top-level list or as `{ "messages": [...] }`
+- Airbyte message JSON (`RECORD` messages), either as top-level list or `{ "messages": [...] }`
 
-## Publish to Senso (Ground Truth Ledger)
+## GraphRAG: Load to Neo4j AuraDB
 
 ```bash
 cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
 source .venv/bin/activate
-python -m airbyte_synthetic_data_pipeline.cli.build_agent_context \
+sync-graph-context
+```
+
+This command:
+
+- picks the latest context file from `data/system_of_record/agent_context/` (or use `--context-file`)
+- creates graph schema and vector index (if missing)
+- upserts `Customer`, `Order`, `SupportTicket`, `Product` nodes
+- creates relationship chains:
+  - `(:Customer)-[:PLACED]->(:Order)-[:CONTAINS_PRODUCT]->(:Product)`
+  - `(:Customer)-[:OPENED_TICKET]->(:SupportTicket)-[:ABOUT_ORDER]->(:Order)`
+- generates embeddings via AWS Bedrock and stores them on `:Retrievable` nodes
+
+## GraphRAG: Query Why Data Is Connected
+
+```bash
+cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
+source .venv/bin/activate
+query-graph-rag --question "Which customers had returns and which orders are linked?" --top-k 5 --max-hops 2
+```
+
+Output includes:
+
+- vector-relevant seed nodes
+- graph-expanded path evidence
+- explicit `Customer -> Order -> SupportTicket` link rows
+- human-readable edge reasons explaining connections
+
+## Neo4j AuraDB + AWS Setup (Step by Step)
+
+1. Create a Neo4j AuraDB instance (Free or Professional).
+2. In Aura, copy:
+   - connection URI (looks like `neo4j+s://<id>.databases.neo4j.io`)
+   - username (`neo4j`)
+   - password
+3. In AWS, use an IAM user/role with `bedrock:InvokeModel`.
+4. In AWS Bedrock console, enable model access for `Amazon Titan Text Embeddings V2`.
+5. Put these in `.env`:
+   - `NEO4J_URI`
+   - `NEO4J_USERNAME`
+   - `NEO4J_PASSWORD`
+   - `AWS_REGION` (Bedrock-enabled region)
+   - optional: `BEDROCK_EMBEDDING_MODEL_ID` (default `amazon.titan-embed-text-v2:0`)
+6. Make sure AWS credentials are available locally (`aws configure`, SSO, or environment variables).
+7. Run `sync-graph-context`.
+8. Run `query-graph-rag` and confirm you see `why_connected_paths` and `customer_order_ticket_links`.
+
+## Optional Senso Publish
+
+```bash
+cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
+source .venv/bin/activate
+build-agent-context \
   --input examples/synthetic_raw_bundle.json \
   --source-name airbyte_synthetic_source \
   --publish-to-senso \
   --senso-title-prefix "Synthetic Commerce"
 ```
 
-When `--publish-to-senso` is enabled:
-
-- raw snapshot is uploaded to Senso
-- normalized context is uploaded to Senso
-- each upload is polled until `processing_status=completed`
-- returned context text hash is compared to local JSON hash
-- receipt is written to `data/system_of_record/receipts/*.json`
-
-This receipt is your auditable reference if an agent output later diverges.
-
-## Senso Setup (Step by Step)
-
-1. Get an API key from your Senso authorised contact (or request one via Senso support).
-2. Open `/Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline/.env`.
-3. Set:
-   - `SENSO_API_KEY=<your_key>`
-   - `SENSO_BASE_URL=https://sdk.senso.ai/api/v1` (default; change only if your tenant uses a different host)
-4. Keep polling defaults unless you need slower/faster checks:
-   - `SENSO_POLL_SECONDS=2`
-   - `SENSO_TIMEOUT_SECONDS=120`
-5. Run a publish command with `--publish-to-senso`.
-6. Confirm the generated receipt has:
-   - `verification.is_match = true`
-   - populated `raw_content.id` and `context_content.id`
-
 ## Environment Variables
 
-- `AIRBYTE_SERVER_URL`
-- `AIRBYTE_BEARER_TOKEN` or `AIRBYTE_USERNAME` + `AIRBYTE_PASSWORD`
-- `AIRBYTE_WORKSPACE_ID` (optional)
-- `AIRBYTE_SOURCE_DEFINITION_ID` (required for source creation)
-- `AIRBYTE_DESTINATION_ID` (needed for sync)
-- `SENSO_API_KEY` (required for Senso publish)
-- `SENSO_BASE_URL` (optional)
-- `SENSO_POLL_SECONDS` (optional)
-- `SENSO_TIMEOUT_SECONDS` (optional)
+- Airbyte: `AIRBYTE_SERVER_URL`, `AIRBYTE_BEARER_TOKEN` or `AIRBYTE_USERNAME` + `AIRBYTE_PASSWORD`, `AIRBYTE_WORKSPACE_ID`, `AIRBYTE_SOURCE_DEFINITION_ID`, `AIRBYTE_DESTINATION_ID`
+- Senso: `SENSO_API_KEY`, `SENSO_BASE_URL`, `SENSO_POLL_SECONDS`, `SENSO_TIMEOUT_SECONDS`
+- Neo4j/AWS: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`, `NEO4J_VECTOR_INDEX`, `AWS_REGION`, `BEDROCK_EMBEDDING_MODEL_ID`
+
