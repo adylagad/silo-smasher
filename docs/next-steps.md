@@ -1,26 +1,10 @@
 # Recommended Next Steps
 
-All four phases from the original roadmap are complete: data ingestion, context normalization, graph RAG, orchestrator, all sponsor tool integrations, FastAPI, Render deployment, and AWS Step Functions pipeline. What follows are the highest-leverage things to build next, ordered by impact.
+All four phases from the original roadmap are complete: data ingestion, context normalization, graph RAG, orchestrator, all sponsor tool integrations, FastAPI, Render deployment, AWS Step Functions pipeline, and the demo frontend. What follows are the highest-leverage things to build next, ordered by impact.
 
 ---
 
-## 1. Demo Frontend (Highest Priority for Hackathon)
-
-The backend is fully built but there is no UI. The "Magic Moment" in the problem statement — showing a live dashboard where MRR drops 15%, then watching the agent investigate in real time — requires a visual interface.
-
-**What to build:**
-- A single-page React or plain HTML/JS app that calls `POST /diagnose`.
-- Left panel: a static "business metric" dashboard showing a simulated MRR drop (a Chart.js line chart works fine).
-- Right panel: a live investigation feed that streams each step as it completes (hypotheses → graph query → Tavily result → Numeric classification → final verdict with confidence score).
-- The `/diagnose` response already contains `hypotheses`, `most_likely_root_cause`, `confidence_overall`, and `_safety` — map these directly to UI components.
-
-**Why it matters:** The current Swagger UI at `/docs` demonstrates the API works but it does not tell a story. Judges need a 30-second "wow" moment, not a JSON blob.
-
-**Quick path:** Host the static frontend on Render as a second service (or serve from the FastAPI app via `StaticFiles`).
-
----
-
-## 2. The Scripted Demo Story
+## 1. The Scripted Demo Story
 
 The synthetic data in `examples/synthetic_raw_bundle.json` is generic (random purchases). The winning demo storyboard is specific:
 
@@ -34,7 +18,7 @@ Currently the orchestrator will not naturally arrive at this conclusion because 
 
 ---
 
-## 3. Activate Real Sponsor API Keys
+## 2. Activate Real Sponsor API Keys
 
 Four sponsor integrations are currently in fallback mode because the keys are `__MISSING__`:
 
@@ -49,7 +33,7 @@ For the hackathon, Numeric and Senso are the most demo-worthy because their outp
 
 ---
 
-## 4. Add a SQL / Structured Query Tool
+## 3. Add a SQL / Structured Query Tool
 
 The problem statement's core loop is: *generate hypotheses → write SQL to test each one*. Currently the orchestrator can query Neo4j (graph) and local context (manifest), but it cannot write and execute ad-hoc SQL.
 
@@ -60,7 +44,7 @@ The problem statement's core loop is: *generate hypotheses → write SQL to test
 
 ---
 
-## 5. Add an Internal Unstructured Signal (Slack / Jira)
+## 4. Add an Internal Unstructured Signal (Slack / Jira)
 
 The problem statement's differentiating "third silo" beyond SQL and external news is:
 
@@ -76,7 +60,7 @@ Even the fake-JSON version is sufficient for a demo and makes the story complete
 
 ---
 
-## 6. Proactive Metric Monitoring (Trigger Instead of Pull)
+## 5. Proactive Metric Monitoring (Trigger Instead of Pull)
 
 Currently Silo Smasher is reactive: a human asks a question. The vision in the problem statement is:
 
@@ -91,7 +75,7 @@ This transforms the tool from a "consultant you call" into an "analyst who calls
 
 ---
 
-## 7. Test Suite
+## 6. Test Suite
 
 There are currently no tests. Adding a minimal set would catch regressions and make the codebase shareable:
 
@@ -103,7 +87,7 @@ Run with: `pytest tests/`
 
 ---
 
-## 8. MCP Server Exposure
+## 7. MCP Server Exposure
 
 The problem statement specifically mentions Model Context Protocol as a winning technique:
 
