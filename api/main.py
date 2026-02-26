@@ -11,6 +11,8 @@ from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from silo_smasher.memory import MemoryLogger
 from silo_smasher.orchestrator import (
@@ -52,6 +54,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve the demo frontend at /app/* and redirect / → /app/index.html
+import pathlib as _pathlib
+_frontend_dir = _pathlib.Path(__file__).parent.parent / "frontend"
+if _frontend_dir.is_dir():
+    app.mount("/app", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+
+
+@app.get("/", include_in_schema=False)
+def root() -> FileResponse:
+    return FileResponse(str(_frontend_dir / "index.html"))
 
 
 # ---------------------------------------------------------------------------

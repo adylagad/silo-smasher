@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Silo Smasher — Autonomous Root-Cause Investigator</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --accent:   #58a6ff;
+      --green:    #3fb950;
+      --red:      #f85149;
+      --yellow:   #d29922;
+      --purple:   #bc8cff;
+      --drop:     #f85149;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; }
+
+    /* ── HEADER ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    header .brand { display: flex; align-items: center; gap: 10px; }
+    header .brand svg { flex-shrink: 0; }
+    header h1 { font-size: 16px; font-weight: 700; letter-spacing: .3px; }
+    header h1 span { color: var(--accent); }
+    header .tagline { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+    }
+    .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+    .status-pill .dot.inactive { background: var(--muted); }
+
+    /* ── MAIN LAYOUT ── */
+    main {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      height: calc(100vh - 57px);
+      overflow: hidden;
+    }
+
+    /* ── LEFT PANEL ── */
+    .left-panel {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    .panel-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin-bottom: 4px;
+    }
+
+    .metric-hero {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px;
+    }
+    .metric-hero .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .metric-hero .value { font-size: 28px; font-weight: 700; }
+    .metric-hero .delta {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: var(--drop);
+      background: rgba(248,81,73,.12); border-radius: 4px;
+      padding: 2px 7px; margin-top: 4px;
+    }
+    .metric-hero .delta::before { content: "▼"; font-size: 9px; }
+    .metric-hero .sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px;
+    }
+    .chart-card canvas { width: 100% !important; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px;
+    }
+    .stat-card .s-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+    .stat-card .s-value { font-size: 17px; font-weight: 700; margin-top: 3px; }
+    .stat-card .s-value.red  { color: var(--red); }
+    .stat-card .s-value.green { color: var(--green); }
+    .stat-card .s-value.yellow { color: var(--yellow); }
+
+    .incident-banner {
+      background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.3);
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 12px; color: var(--red); line-height: 1.5;
+    }
+    .incident-banner strong { display: block; margin-bottom: 2px; }
+
+    /* ── RIGHT PANEL ── */
+    .right-panel {
+      overflow-y: auto; padding: 20px 24px;
+      display: flex; flex-direction: column; gap: 18px;
+    }
+
+    /* Question bar */
+    .question-bar {
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .question-bar textarea {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px; color: var(--text);
+      font-size: 14px; resize: none; height: 48px; line-height: 1.5;
+      transition: border-color .15s;
+    }
+    .question-bar textarea:focus { outline: none; border-color: var(--accent); }
+    .question-bar button {
+      background: var(--accent); color: #0d1117;
+      border: none; border-radius: 8px; padding: 0 18px; height: 48px;
+      font-weight: 700; font-size: 13px; cursor: pointer;
+      white-space: nowrap; transition: opacity .15s;
+    }
+    .question-bar button:hover { opacity: .85; }
+    .question-bar button:disabled { opacity: .4; cursor: default; }
+
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; }
+    .preset-btn {
+      background: none; border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px; font-size: 11px;
+      color: var(--muted); cursor: pointer; transition: all .15s;
+    }
+    .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Investigation feed */
+    #feed { display: flex; flex-direction: column; gap: 14px; }
+
+    .feed-empty {
+      color: var(--muted); font-size: 13px; text-align: center;
+      padding: 48px 0; line-height: 1.8;
+    }
+    .feed-empty .big { font-size: 32px; margin-bottom: 8px; }
+
+    /* Progress steps */
+    .progress-steps { display: flex; flex-direction: column; gap: 6px; }
+    .step {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--muted); padding: 6px 0;
+    }
+    .step .step-icon { width: 20px; height: 20px; flex-shrink: 0; }
+    .step.done   .step-icon { color: var(--green); }
+    .step.active .step-icon { color: var(--accent); }
+    .step.done   { color: var(--text); }
+    .step.active { color: var(--text); font-weight: 500; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin .7s linear infinite; display: inline-block; }
+
+    /* Section headers */
+    .section-head {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-head::after {
+      content: ""; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Hypothesis cards */
+    .hypothesis-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 16px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity .35s ease, transform .35s ease;
+    }
+    .hypothesis-card.visible { opacity: 1; transform: none; }
+
+    .hypothesis-card .h-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .hypothesis-card .h-name { font-weight: 600; font-size: 13px; }
+    .hypothesis-card .h-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .5px;
+      border-radius: 4px; padding: 2px 8px; text-transform: uppercase;
+    }
+    .badge-supported  { background: rgba(63,185,80,.15);  color: var(--green);  border: 1px solid rgba(63,185,80,.3); }
+    .badge-rejected   { background: rgba(248,81,73,.12);  color: var(--red);    border: 1px solid rgba(248,81,73,.3); }
+    .badge-inconclusive { background: rgba(210,153,34,.12); color: var(--yellow); border: 1px solid rgba(210,153,34,.3); }
+
+    .confidence-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .confidence-bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .confidence-bar-fill { height: 100%; border-radius: 3px; transition: width .6s ease; width: 0; }
+    .fill-supported   { background: var(--green); }
+    .fill-rejected    { background: var(--red); }
+    .fill-inconclusive { background: var(--yellow); }
+    .confidence-label { font-size: 11px; color: var(--muted); min-width: 32px; text-align: right; }
+
+    .evidence-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+    .evidence-list li {
+      font-size: 12px; color: var(--muted); padding-left: 14px;
+      position: relative; line-height: 1.5;
+    }
+    .evidence-list li::before { content: "·"; position: absolute; left: 0; color: var(--border); font-size: 18px; top: -2px; }
+
+    /* Verdict card */
+    .verdict-card {
+      background: linear-gradient(135deg, rgba(88,166,255,.07), rgba(188,140,255,.07));
+      border: 1px solid rgba(88,166,255,.3);
+      border-radius: 10px; padding: 18px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity .4s ease, transform .4s ease;
+    }
+    .verdict-card.visible { opacity: 1; transform: none; }
+    .verdict-card .v-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin-bottom: 8px; }
+    .verdict-card .v-text { font-size: 14px; font-weight: 500; line-height: 1.6; }
+    .verdict-card .v-confidence {
+      display: flex; align-items: center; gap: 10px; margin-top: 14px;
+    }
+    .v-conf-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .v-conf-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+    .v-conf-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); border-radius: 4px; transition: width .8s ease; width: 0; }
+    .v-conf-pct { font-size: 13px; font-weight: 700; color: var(--accent); min-width: 36px; text-align: right; }
+
+    .safety-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 10px; color: var(--green); border: 1px solid rgba(63,185,80,.3);
+      background: rgba(63,185,80,.08); border-radius: 20px; padding: 3px 9px;
+      margin-top: 12px;
+    }
+
+    /* Error card */
+    .error-card {
+      background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.25);
+      border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--red);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="7" fill="#1f6feb"/>
+      <circle cx="9" cy="9" r="3" fill="#58a6ff"/>
+      <circle cx="19" cy="9" r="3" fill="#bc8cff"/>
+      <circle cx="9" cy="19" r="3" fill="#3fb950"/>
+      <circle cx="19" cy="19" r="3" fill="#d29922"/>
+      <line x1="12" y1="9" x2="16" y2="9" stroke="#58a6ff" stroke-width="1.5"/>
+      <line x1="9" y1="12" x2="9" y2="16" stroke="#3fb950" stroke-width="1.5"/>
+      <line x1="12" y1="19" x2="16" y2="19" stroke="#d29922" stroke-width="1.5"/>
+      <line x1="19" y1="12" x2="19" y2="16" stroke="#bc8cff" stroke-width="1.5"/>
+      <line x1="11.5" y1="11.5" x2="16.5" y2="16.5" stroke="#8b949e" stroke-width="1.2" opacity=".5"/>
+    </svg>
+    <div>
+      <h1>Silo <span>Smasher</span></h1>
+      <div class="tagline">Autonomous Root-Cause Investigator · Graph-Augmented Agentic BI</div>
+    </div>
+  </div>
+  <div class="status-pill" id="api-status">
+    <span class="dot inactive" id="status-dot"></span>
+    <span id="status-text">Checking API…</span>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+    <div>
+      <div class="panel-title">Metric Monitor</div>
+      <div class="metric-hero">
+        <div class="label">Monthly Recurring Revenue</div>
+        <div class="value">$84,500</div>
+        <div class="delta">15.2% vs last month</div>
+        <div class="sub">Week of Feb 17–24, 2026 · Investigating</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="panel-title" style="margin-bottom:10px">MRR — 8 Week Trend</div>
+      <canvas id="mrrChart" height="140"></canvas>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="s-label">Gross Revenue</div>
+        <div class="s-value">$84.5K</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">WoW Change</div>
+        <div class="s-value red">−15.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Affected Region</div>
+        <div class="s-value yellow">UK / EU</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Conversion Rate</div>
+        <div class="s-value red">61.4%</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Return Rate</div>
+        <div class="s-value">8.2%</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Open Tickets</div>
+        <div class="s-value yellow">+34%</div>
+      </div>
+    </div>
+
+    <div class="incident-banner">
+      <strong>⚠ Anomaly Detected</strong>
+      Revenue drop concentrated in UK "Shipped Items" category. Support ticket volume up 34% for shipping-related issues since Feb 17.
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div>
+      <div class="panel-title" style="margin-bottom:8px">Investigation</div>
+      <div class="question-bar">
+        <textarea id="question" placeholder="Ask a diagnostic question…">MRR is down 15% this week. Why?</textarea>
+        <button id="run-btn" onclick="runDiagnosis()">▶ Investigate</button>
+      </div>
+    </div>
+
+    <div class="presets">
+      <span style="font-size:11px;color:var(--muted);padding:4px 0;">Presets:</span>
+      <button class="preset-btn" onclick="setQuestion('MRR is down 15% this week. Why?')">MRR drop 15%</button>
+      <button class="preset-btn" onclick="setQuestion('Sales dropped 20% in the UK. What is the root cause?')">UK sales drop</button>
+      <button class="preset-btn" onclick="setQuestion('Why did our Q3 revenue miss forecast by 12%?')">Q3 miss</button>
+      <button class="preset-btn" onclick="setQuestion('Customer churn spiked to 8% last month. What caused it?')">Churn spike</button>
+    </div>
+
+    <div id="feed">
+      <div class="feed-empty">
+        <div class="big">🔍</div>
+        Enter a diagnostic question and click <strong>Investigate</strong>.<br/>
+        The agent will generate hypotheses and test each one using<br/>
+        internal graph data, finance variance analysis, and external news.
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── MRR Chart ────────────────────────────────────────────────
+const weeks = ['Jan 6','Jan 13','Jan 20','Jan 27','Feb 3','Feb 10','Feb 17','Feb 24'];
+const mrrData = [99200, 101800, 98700, 102400, 104100, 100300, 87600, 84500];
+
+const ctx = document.getElementById('mrrChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: weeks,
+    datasets: [{
+      data: mrrData,
+      borderColor: '#58a6ff',
+      backgroundColor: (context) => {
+        const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 140);
+        gradient.addColorStop(0, 'rgba(88,166,255,0.18)');
+        gradient.addColorStop(1, 'rgba(88,166,255,0)');
+        return gradient;
+      },
+      borderWidth: 2,
+      pointRadius: mrrData.map((_, i) => i >= 6 ? 5 : 3),
+      pointBackgroundColor: mrrData.map((_, i) => i >= 6 ? '#f85149' : '#58a6ff'),
+      pointBorderColor: 'transparent',
+      tension: 0.35,
+      fill: true,
+    }]
+  },
+  options: {
+    responsive: true,
+    animation: { duration: 800, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#161b22',
+        borderColor: '#30363d',
+        borderWidth: 1,
+        titleColor: '#e6edf3',
+        bodyColor: '#8b949e',
+        callbacks: {
+          label: v => ` $${v.raw.toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(48,54,61,0.5)' },
+        ticks: { color: '#8b949e', font: { size: 10 } }
+      },
+      y: {
+        grid: { color: 'rgba(48,54,61,0.5)' },
+        ticks: {
+          color: '#8b949e', font: { size: 10 },
+          callback: v => '$' + (v/1000).toFixed(0) + 'K'
+        },
+        min: 70000, max: 115000,
+      }
+    }
+  }
+});
+
+// ── API health check ─────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('status-dot').classList.remove('inactive');
+      document.getElementById('status-text').textContent =
+        'API live' + (d.s3_memory_active ? ' · S3 memory on' : '');
+    }
+  } catch {
+    document.getElementById('status-text').textContent = 'API unreachable';
+  }
+}
+checkHealth();
+
+// ── Helpers ──────────────────────────────────────────────────
+function setQuestion(q) {
+  document.getElementById('question').value = q;
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function statusBadge(s) {
+  const map = {
+    supported: 'badge-supported',
+    rejected: 'badge-rejected',
+    inconclusive: 'badge-inconclusive',
+  };
+  return map[s] || 'badge-inconclusive';
+}
+function fillClass(s) {
+  const map = { supported: 'fill-supported', rejected: 'fill-rejected', inconclusive: 'fill-inconclusive' };
+  return map[s] || 'fill-inconclusive';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ── Progress steps ────────────────────────────────────────────
+const STEPS = [
+  { id: 's1', label: 'Generating hypotheses…' },
+  { id: 's2', label: 'Querying knowledge graph (Neo4j)…' },
+  { id: 's3', label: 'Running finance variance analysis…' },
+  { id: 's4', label: 'Searching external economic signals…' },
+  { id: 's5', label: 'Scoring hypotheses & composing brief…' },
+];
+
+function spinnerSvg() {
+  return `<svg class="step-icon spinner" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M10 2a8 8 0 0 1 8 8" stroke-linecap="round"/>
+  </svg>`;
+}
+function checkSvg() {
+  return `<svg class="step-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="10" cy="10" r="8"/><path d="M6.5 10.5l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function buildProgressHtml() {
+  return `<div class="progress-steps" id="progress">` +
+    STEPS.map(s =>
+      `<div class="step" id="${s.id}">
+        <svg class="step-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3">
+          <circle cx="10" cy="10" r="8"/>
+        </svg>
+        <span>${esc(s.label)}</span>
+      </div>`
+    ).join('') +
+  `</div>`;
+}
+
+async function animateStep(id, doneAfterMs) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active');
+  el.querySelector('.step-icon').outerHTML = spinnerSvg();
+  await sleep(doneAfterMs);
+  el.classList.remove('active');
+  el.classList.add('done');
+  el.querySelector('.step-icon').outerHTML = checkSvg();
+}
+
+// ── Main diagnosis flow ───────────────────────────────────────
+async function runDiagnosis() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Investigating…';
+
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `
+    <div class="section-head">Progress</div>
+    ${buildProgressHtml()}
+  `;
+
+  // kick off steps animation concurrently with the real API call
+  const timings = [800, 1200, 1000, 900, 700]; // approx millis per step
+  let offset = 0;
+  const stepPromises = STEPS.map((s, i) => {
+    offset += (i === 0 ? 0 : timings[i - 1]);
+    return sleep(offset).then(() => animateStep(s.id, timings[i]));
+  });
+
+  let result;
+  try {
+    const res = await fetch('/diagnose', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question }),
+    });
+    result = await res.json();
+  } catch (err) {
+    result = { error: 'network_error', detail: String(err) };
+  }
+
+  // wait for all step animations
+  await Promise.all(stepPromises);
+  await sleep(300);
+
+  // render results
+  renderResults(feed, result, question);
+
+  btn.disabled = false;
+  btn.textContent = '▶ Investigate';
+}
+
+function renderResults(feed, result, question) {
+  if (result.error && !result.hypotheses) {
+    feed.innerHTML += `
+      <div class="section-head">Result</div>
+      <div class="error-card">
+        <strong>Investigation failed</strong><br/>
+        ${esc(result.detail || result.error)}
+        ${result.fallback_response ? '<br/><br/>Local fallback activated.' : ''}
+      </div>`;
+    if (result.fallback_response) renderFallback(feed, result.fallback_response);
+    return;
+  }
+
+  const hypotheses = result.hypotheses || [];
+  const rootCause  = result.most_likely_root_cause || result.raw_output_text || null;
+  const confidence = typeof result.confidence_overall === 'number' ? result.confidence_overall : null;
+  const provider   = result._provider || 'unknown';
+  const safety     = result._safety || null;
+
+  // hypotheses section
+  if (hypotheses.length > 0) {
+    let html = `<div class="section-head">Hypotheses</div>`;
+    hypotheses.forEach((h, i) => {
+      const status   = (h.status || 'inconclusive').toLowerCase();
+      const conf     = typeof h.confidence === 'number' ? h.confidence : 0;
+      const evidence = Array.isArray(h.evidence) ? h.evidence : [];
+      html += `
+        <div class="hypothesis-card" id="h${i}">
+          <div class="h-header">
+            <span class="h-name">${esc(h.name || `Hypothesis ${i+1}`)}</span>
+            <span class="h-badge ${statusBadge(status)}">${esc(status)}</span>
+          </div>
+          <div class="confidence-bar-wrap">
+            <div class="confidence-bar-track">
+              <div class="confidence-bar-fill ${fillClass(status)}" id="hbar${i}" style="width:0"></div>
+            </div>
+            <span class="confidence-label">${Math.round(conf*100)}%</span>
+          </div>
+          ${evidence.length > 0 ? `<ul class="evidence-list">${evidence.map(e=>`<li>${esc(e)}</li>`).join('')}</ul>` : ''}
+        </div>`;
+    });
+    feed.innerHTML += html;
+
+    // animate cards in
+    hypotheses.forEach((h, i) => {
+      const conf = typeof h.confidence === 'number' ? h.confidence : 0;
+      const status = (h.status || 'inconclusive').toLowerCase();
+      setTimeout(() => {
+        const card = document.getElementById(`h${i}`);
+        if (card) card.classList.add('visible');
+        setTimeout(() => {
+          const bar = document.getElementById(`hbar${i}`);
+          if (bar) bar.style.width = Math.round(conf*100) + '%';
+        }, 150);
+      }, i * 180);
+    });
+  }
+
+  // verdict section
+  if (rootCause || confidence !== null) {
+    const confPct = confidence !== null ? Math.round(confidence * 100) : null;
+    feed.innerHTML += `
+      <div class="section-head">Verdict</div>
+      <div class="verdict-card" id="verdict-card">
+        <div class="v-label">Most Likely Root Cause · via ${esc(provider)}</div>
+        <div class="v-text">${esc(rootCause || 'Investigation complete — see hypotheses above.')}</div>
+        ${confPct !== null ? `
+        <div class="v-confidence">
+          <span class="v-conf-label">Overall confidence</span>
+          <div class="v-conf-track"><div class="v-conf-fill" id="v-bar"></div></div>
+          <span class="v-conf-pct">${confPct}%</span>
+        </div>` : ''}
+        ${safety ? `<div class="safety-pill">✓ PII scanned · ${safety.tool_checks?.length ?? 0} tool actions verified</div>` : ''}
+      </div>`;
+
+    setTimeout(() => {
+      const vc = document.getElementById('verdict-card');
+      if (vc) vc.classList.add('visible');
+      setTimeout(() => {
+        const vb = document.getElementById('v-bar');
+        if (vb && confPct !== null) vb.style.width = confPct + '%';
+      }, 200);
+    }, hypotheses.length * 180 + 200);
+  }
+
+  // recommended queries
+  const recs = result.recommended_next_queries;
+  if (Array.isArray(recs) && recs.length > 0) {
+    feed.innerHTML += `
+      <div class="section-head">Recommended Follow-Ups</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <ul class="evidence-list">
+          ${recs.map(r => `<li style="color:var(--text)">${esc(r)}</li>`).join('')}
+        </ul>
+      </div>`;
+  }
+}
+
+function renderFallback(feed, fb) {
+  if (!fb) return;
+  feed.innerHTML += `
+    <div class="section-head">Local Fallback Context</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--muted)">
+      ${esc(fb.metric_summary || JSON.stringify(fb).slice(0, 300))}
+    </div>`;
+}
+</script>
+</body>
+</html>

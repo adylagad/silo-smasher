@@ -18,8 +18,9 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir -e .
 
-# Copy the API and supporting files.
+# Copy the API, frontend, and supporting files.
 COPY api/ ./api/
+COPY frontend/ ./frontend/
 COPY examples/ ./examples/
 
 # Pre-create the system-of-record directory tree so local fallbacks work.
