@@ -61,6 +61,7 @@ silo-smasher/
 │   ├── guardrails/             # Fastino PII redaction + action safety
 │   ├── market_signals/         # Tavily external economic news
 │   ├── memory/                 # S3 memory log writer/reader
+│   ├── monitoring/             # Proactive metric monitors + auto-trigger runtime
 │   ├── orchestrator/           # OpenAI (primary) + Gemini (fallback) agent loop
 │   ├── pipeline/               # Ground-truth pipeline (Airbyte → context → Senso)
 │   ├── senso/                  # Senso system-of-record client
@@ -150,6 +151,26 @@ curl -X POST http://localhost:8000/pipeline \
   -d '{"question": "Why did MRR drop 15%?"}'
 ```
 
+### 6. Start proactive monitoring (trigger instead of pull)
+
+```bash
+curl -X POST http://localhost:8000/monitor \
+  -H "Content-Type: application/json" \
+  -d '{
+    "metric_name": "net_revenue",
+    "drop_threshold_pct": 15,
+    "check_interval_seconds": 60,
+    "comparison_window_hours": 24,
+    "baseline_window_hours": 24
+  }'
+```
+
+Then check monitor state:
+
+```bash
+curl http://localhost:8000/monitor
+```
+
 ---
 
 ## REST API
@@ -160,6 +181,11 @@ curl -X POST http://localhost:8000/pipeline \
 | `POST /diagnose` | Synchronous root-cause investigation |
 | `GET /memory` | List past diagnostic runs from S3 |
 | `GET /memory/{key}` | Fetch a specific memory log |
+| `POST /monitor` | Start proactive metric monitor |
+| `GET /monitor` | List monitor states |
+| `GET /monitor/{id}` | Fetch one monitor |
+| `POST /monitor/{id}/check` | Force an immediate monitor check |
+| `DELETE /monitor/{id}` | Stop a monitor |
 | `POST /pipeline` | Start async Step Functions pipeline |
 | `GET /pipeline/{arn}` | Poll pipeline execution status |
 

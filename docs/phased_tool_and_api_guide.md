@@ -302,7 +302,56 @@ This document explains how and why each integrated tool is used, phase by phase,
 - Input: `MODULATE_API_KEY` and Modulate runtime vars.
 - Output: recommended response mode (`summary_mode` or `deep_dive_mode`) with intent/emotion metadata.
 
-## Phase 11: End-to-End Runtime Sequence
+## Phase 11: Proactive Metric Monitoring (Trigger Instead of Pull)
+
+### Why this phase exists
+- Shift from reactive diagnostics to proactive detection.
+- Automatically run root-cause investigations when a watched metric drops below threshold.
+- Persist every auto-triggered investigation to memory for auditability.
+
+### Tools used
+- FastAPI monitoring endpoints.
+- Local structured SQL store (SQLite metrics).
+- Existing orchestrator (`/diagnose` equivalent call path).
+- Optional notifications:
+  - Slack webhook (incoming webhook URL).
+  - AWS SES email.
+
+### How it is used
+- Create monitor:
+  - `POST /monitor` with metric, threshold, interval, and windows.
+- Runtime loop:
+  - On each interval, compute current-window metric vs previous baseline window.
+  - If drop threshold is breached, auto-trigger diagnosis and log to S3 memory.
+  - Optionally send Slack/email alert payloads.
+- Control surface:
+  - `GET /monitor`
+  - `GET /monitor/{id}`
+  - `POST /monitor/{id}/check`
+  - `DELETE /monitor/{id}`
+
+### API endpoints used
+- Service endpoints:
+  - `POST /monitor`
+  - `GET /monitor`
+  - `GET /monitor/{id}`
+  - `POST /monitor/{id}/check`
+  - `DELETE /monitor/{id}`
+- Optional notification endpoints:
+  - Slack Incoming Webhook URL
+  - AWS SES `SendEmail`
+
+### Code references
+- `api/main.py`
+- `api/models.py`
+- `src/silo_smasher/monitoring/config.py`
+- `src/silo_smasher/monitoring/service.py`
+
+### Key inputs and outputs
+- Inputs: metric config, threshold, interval, optional monitor notification vars.
+- Output: monitor runtime state, auto-triggered diagnosis `run_id`, S3 memory key, optional notification result.
+
+## Phase 12: End-to-End Runtime Sequence
 
 1. Pull or reuse source data through Airbyte.
 2. Normalize into deterministic agent-ready context.
@@ -331,6 +380,7 @@ This document explains how and why each integrated tool is used, phase by phase,
 | Numeric Variance API | 8 | Finance-grade seasonal vs anomaly classification for revenue dips |
 | Tavily Search API | 9 | Outside-world economic signal detection for root-cause support |
 | Modulate Velma 2.0 | 10 | Voice intent/emotion-driven response depth control |
+| FastAPI Monitoring Runtime | 11 | Proactive trigger loop and automatic diagnosis on threshold breach |
 
 ## Notes on Defaults vs Unique Secrets
 

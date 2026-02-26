@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from silo_smasher.memory import MemoryLogger
+from silo_smasher.monitoring import MetricMonitorService, MonitoringSettings
 from silo_smasher.orchestrator import (
     DiagnosticOrchestrator,
     OrchestratorSettings,
@@ -22,6 +23,9 @@ from silo_smasher.orchestrator import (
 
 from .models import (
     DiagnoseRequest,
+    MonitorListResponse,
+    MonitorRecordResponse,
+    MonitorStartRequest,
     PipelineStartRequest,
     PipelineStartResponse,
     PipelineStatusResponse,
@@ -34,7 +38,19 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     app.state.orchestrator = DiagnosticOrchestrator(OrchestratorSettings.from_env())
     app.state.memory_logger = MemoryLogger.from_env()
-    yield
+    app.state.metric_monitor = MetricMonitorService(
+        settings=MonitoringSettings.from_env(),
+        trigger_diagnosis=lambda question, extra_context: _run_diagnosis_and_log(
+            app=app,
+            question=question,
+            extra_context=extra_context,
+            trigger={"source": "metric_monitor"},
+        ),
+    )
+    try:
+        yield
+    finally:
+        await app.state.metric_monitor.shutdown()
 
 
 app = FastAPI(
@@ -71,6 +87,35 @@ def root() -> FileResponse:
     return FileResponse(str(_frontend_dir / "index.html"))
 
 
+def _run_diagnosis_and_log(
+    *,
+    app: FastAPI,
+    question: str,
+    extra_context: str | None = None,
+    trigger: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    orchestrator: DiagnosticOrchestrator = app.state.orchestrator
+    memory_logger: MemoryLogger = app.state.memory_logger
+
+    result = orchestrator.run(
+        question=question,
+        extra_context=extra_context,
+    )
+
+    run_id = str(uuid.uuid4())
+    s3_key = memory_logger.log_run(
+        run_id=run_id,
+        question=question,
+        result=result,
+    )
+
+    result["run_id"] = run_id
+    result["s3_memory_key"] = s3_key
+    if trigger:
+        result["trigger"] = trigger
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Health
 # ---------------------------------------------------------------------------
@@ -78,10 +123,12 @@ def root() -> FileResponse:
 @app.get("/health", tags=["Infra"])
 def health() -> dict[str, Any]:
     logger: MemoryLogger = app.state.memory_logger
+    monitor: MetricMonitorService = app.state.metric_monitor
     return {
         "status": "ok",
         "s3_memory_active": logger.is_active,
         "step_functions_arn": os.getenv("AWS_STEP_FUNCTIONS_STATE_MACHINE_ARN") or None,
+        "monitor_supported_metrics": monitor.supported_metrics,
     }
 
 
@@ -100,24 +147,12 @@ def diagnose(request: DiagnoseRequest) -> dict[str, Any]:
 
     The result is also persisted to S3 as a memory-log entry.
     """
-    orchestrator: DiagnosticOrchestrator = app.state.orchestrator
-    memory_logger: MemoryLogger = app.state.memory_logger
-
-    result = orchestrator.run(
+    return _run_diagnosis_and_log(
+        app=app,
         question=request.question,
         extra_context=request.extra_context,
+        trigger={"source": "manual_api"},
     )
-
-    run_id = str(uuid.uuid4())
-    s3_key = memory_logger.log_run(
-        run_id=run_id,
-        question=request.question,
-        result=result,
-    )
-
-    result["run_id"] = run_id
-    result["s3_memory_key"] = s3_key
-    return result
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +188,74 @@ def get_memory_run(s3_key: str) -> dict[str, Any]:
             detail=f"Memory log entry not found: {s3_key}",
         )
     return entry
+
+
+# ---------------------------------------------------------------------------
+# Proactive metric monitoring
+# ---------------------------------------------------------------------------
+
+@app.post("/monitor", response_model=MonitorRecordResponse, tags=["Monitoring"])
+async def start_metric_monitor(request: MonitorStartRequest) -> MonitorRecordResponse:
+    """Start a proactive monitor that auto-triggers diagnosis on metric drops."""
+    monitor: MetricMonitorService = app.state.metric_monitor
+    try:
+        record = await monitor.start_monitor(
+            metric_name=request.metric_name,
+            drop_threshold_pct=request.drop_threshold_pct,
+            check_interval_seconds=request.check_interval_seconds,
+            comparison_window_hours=request.comparison_window_hours,
+            baseline_window_hours=request.baseline_window_hours,
+            auto_stop_after_trigger=request.auto_stop_after_trigger,
+            question_template=request.question_template,
+            extra_context=request.extra_context,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return MonitorRecordResponse.model_validate(record)
+
+
+@app.get("/monitor", response_model=MonitorListResponse, tags=["Monitoring"])
+async def list_metric_monitors() -> MonitorListResponse:
+    """List active/stopped metric monitors and recent trigger state."""
+    monitor: MetricMonitorService = app.state.metric_monitor
+    records = await monitor.list_monitors()
+    return MonitorListResponse(
+        monitors=[MonitorRecordResponse.model_validate(record) for record in records],
+        count=len(records),
+    )
+
+
+@app.get("/monitor/{monitor_id}", response_model=MonitorRecordResponse, tags=["Monitoring"])
+async def get_metric_monitor(monitor_id: str) -> MonitorRecordResponse:
+    """Return details for one metric monitor."""
+    monitor: MetricMonitorService = app.state.metric_monitor
+    try:
+        record = await monitor.get_monitor(monitor_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Monitor not found: {monitor_id}")
+    return MonitorRecordResponse.model_validate(record)
+
+
+@app.post("/monitor/{monitor_id}/check", response_model=MonitorRecordResponse, tags=["Monitoring"])
+async def run_metric_monitor_check(monitor_id: str) -> MonitorRecordResponse:
+    """Execute one immediate check for a monitor."""
+    monitor: MetricMonitorService = app.state.metric_monitor
+    try:
+        record = await monitor.run_check_once(monitor_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Monitor not found: {monitor_id}")
+    return MonitorRecordResponse.model_validate(record)
+
+
+@app.delete("/monitor/{monitor_id}", response_model=MonitorRecordResponse, tags=["Monitoring"])
+async def stop_metric_monitor(monitor_id: str) -> MonitorRecordResponse:
+    """Stop a running monitor."""
+    monitor: MetricMonitorService = app.state.metric_monitor
+    try:
+        record = await monitor.stop_monitor(monitor_id)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Monitor not found: {monitor_id}")
+    return MonitorRecordResponse.model_validate(record)
 
 
 # ---------------------------------------------------------------------------
