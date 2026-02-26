@@ -1,0 +1,138 @@
+{
+  "Comment": "Autonomous Diagnostic Pipeline — Airbyte → Context → Neo4j Graph → Diagnosis → S3 Memory",
+  "StartAt": "IngestData",
+  "States": {
+
+    "IngestData": {
+      "Type": "Task",
+      "Comment": "Pull fresh synthetic records from Airbyte. If Airbyte is not configured the handler falls through to the local input_json_path.",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${IngestDataFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "ingest_result.$": "$.Payload"
+      },
+      "ResultPath": "$.ingest",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Comment": "Airbyte unavailable — proceed with local file fallback.",
+          "ResultPath": "$.ingest_error",
+          "Next": "BuildAgentContext"
+        }
+      ],
+      "Next": "BuildAgentContext"
+    },
+
+    "BuildAgentContext": {
+      "Type": "Task",
+      "Comment": "Normalize raw records into agent-ready context JSON and persist to system-of-record.",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${BuildContextFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "context_result.$": "$.Payload"
+      },
+      "ResultPath": "$.context",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Next": "SyncGraphContext"
+    },
+
+    "SyncGraphContext": {
+      "Type": "Task",
+      "Comment": "Push normalized context into Neo4j AuraDB as Customer/Order/Product/SupportTicket nodes with vector embeddings.",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SyncGraphFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "graph_result.$": "$.Payload"
+      },
+      "ResultPath": "$.graph",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 10,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Comment": "Graph sync failed — orchestrator will fall back to local context.",
+          "ResultPath": "$.graph_error",
+          "Next": "RunDiagnosis"
+        }
+      ],
+      "Next": "RunDiagnosis"
+    },
+
+    "RunDiagnosis": {
+      "Type": "Task",
+      "Comment": "Execute the agentic orchestrator: hypothesis generation → tool-assisted investigation → confidence-scored brief.",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${RunDiagnosisFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "diagnosis.$": "$.Payload"
+      },
+      "ResultPath": "$.diagnosis",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 1,
+          "BackoffRate": 1
+        }
+      ],
+      "Next": "LogMemoryToS3"
+    },
+
+    "LogMemoryToS3": {
+      "Type": "Task",
+      "Comment": "Persist the diagnostic result to S3 for agent memory and audit trail.",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${LogMemoryFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "memory_result.$": "$.Payload"
+      },
+      "ResultPath": "$.memory",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    }
+
+  }
+}

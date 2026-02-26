@@ -1,0 +1,94 @@
+services:
+  - type: web
+    name: diagnostic-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # ── Orchestrator ──────────────────────────────────────────────────────
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: OPENAI_MAX_TOOL_ROUNDS
+        value: "8"
+      - key: ORCHESTRATOR_PRIMARY_PROVIDER
+        value: openai
+      - key: ORCHESTRATOR_ENABLE_GEMINI_FALLBACK
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+
+      # ── Neo4j GraphRAG ────────────────────────────────────────────────────
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        value: neo4j
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: NEO4J_DATABASE
+        value: neo4j
+      - key: NEO4J_VECTOR_INDEX
+        value: entity_embedding_index
+
+      # ── AWS (Bedrock embeddings + S3 memory + Step Functions) ─────────────
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: us-east-1
+      - key: BEDROCK_EMBEDDING_MODEL_ID
+        value: amazon.titan-embed-text-v2:0
+
+      # S3 memory log bucket (create in AWS Console or via CLI).
+      - key: AWS_S3_MEMORY_BUCKET
+        sync: false
+      - key: AWS_S3_MEMORY_PREFIX
+        value: diagnostic-runs/
+      - key: AWS_S3_MEMORY_ENABLED
+        value: "true"
+
+      # Step Functions state machine ARN (deployed separately).
+      - key: AWS_STEP_FUNCTIONS_STATE_MACHINE_ARN
+        sync: false
+
+      # ── Senso (system-of-record) ──────────────────────────────────────────
+      - key: SENSO_API_KEY
+        sync: false
+      - key: SENSO_BASE_URL
+        value: https://sdk.senso.ai/api/v1
+
+      # ── Fastino guardrails ────────────────────────────────────────────────
+      - key: FASTINO_API_KEY
+        sync: false
+      - key: FASTINO_GUARDRAILS_ENABLED
+        value: "true"
+      - key: FASTINO_FAIL_MODE
+        value: open
+
+      # ── Tavily external news ──────────────────────────────────────────────
+      - key: TAVILY_API_KEY
+        sync: false
+
+      # ── Numeric finance variance ──────────────────────────────────────────
+      - key: NUMERIC_API_KEY
+        sync: false
+
+      # ── Yutori web navigation ─────────────────────────────────────────────
+      - key: YUTORI_API_KEY
+        sync: false
+
+      # ── Modulate voice ────────────────────────────────────────────────────
+      - key: MODULATE_API_KEY
+        sync: false
+
+      # ── Airbyte (optional for /pipeline endpoint) ─────────────────────────
+      - key: AIRBYTE_SERVER_URL
+        value: http://localhost:8000/api/public/v1
+      - key: AIRBYTE_BEARER_TOKEN
+        sync: false

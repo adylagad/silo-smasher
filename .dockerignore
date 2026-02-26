@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.git/
+.env
+.env.*
+!.env.example
+data/system_of_record/raw_snapshots/
+data/system_of_record/agent_context/
+data/system_of_record/receipts/
+data/system_of_record/manifest.jsonl
+*.md
+docs/
+tests/
