@@ -8,6 +8,7 @@ from typing import Any, Callable
 from airbyte_synthetic_data_pipeline.finance import RevenueVarianceClient
 from airbyte_synthetic_data_pipeline.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
 from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
+from airbyte_synthetic_data_pipeline.market_signals import ExternalNewsSearchClient
 from airbyte_synthetic_data_pipeline.senso.client import SensoClient, SensoConfig
 from airbyte_synthetic_data_pipeline.web_navigation import NavigatorClient
 
@@ -30,6 +31,7 @@ class DiagnosticToolRuntime:
         self._senso_client: SensoClient | None = None
         self._navigator_client: NavigatorClient | None = None
         self._revenue_variance_client: RevenueVarianceClient | None = None
+        self._external_news_client: ExternalNewsSearchClient | None = None
         self._tool_map: dict[str, ToolSpec] = {}
         self._init_tools()
 
@@ -153,6 +155,25 @@ class DiagnosticToolRuntime:
                 },
                 handler=self._analyze_revenue_variance,
             ),
+            "search_external_economic_news": ToolSpec(
+                name="search_external_economic_news",
+                description=(
+                    "Search external economic news for a country/region to explain revenue "
+                    "movement with real-world context."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "country": {"type": "string"},
+                        "query": {"type": "string"},
+                        "hours_back": {"type": "integer", "minimum": 1, "maximum": 168},
+                        "max_results": {"type": "integer", "minimum": 1, "maximum": 10},
+                    },
+                    "required": ["country"],
+                    "additionalProperties": False,
+                },
+                handler=self._search_external_economic_news,
+            ),
         }
 
     def _ensure_graph_service(self) -> GraphRAGService:
@@ -187,6 +208,12 @@ class DiagnosticToolRuntime:
             return self._revenue_variance_client
         self._revenue_variance_client = RevenueVarianceClient.from_env()
         return self._revenue_variance_client
+
+    def _ensure_external_news_client(self) -> ExternalNewsSearchClient:
+        if self._external_news_client:
+            return self._external_news_client
+        self._external_news_client = ExternalNewsSearchClient.from_env()
+        return self._external_news_client
 
     def _query_graph_connections(self, arguments: dict[str, Any]) -> dict[str, Any]:
         question = str(arguments.get("question", "")).strip()
@@ -301,4 +328,21 @@ class DiagnosticToolRuntime:
             region=region,
             historical_change_pct=historical_change_pct,
             notes=notes,
+        )
+
+    def _search_external_economic_news(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        country = str(arguments.get("country", "")).strip()
+        if not country:
+            return {"error": "country is required"}
+
+        query = str(arguments.get("query", "")).strip() or None
+        hours_back = int(arguments.get("hours_back", 24))
+        max_results = int(arguments.get("max_results", 5))
+
+        client = self._ensure_external_news_client()
+        return client.search_economic_news(
+            country=country,
+            query=query,
+            hours_back=hours_back,
+            max_results=max_results,
         )

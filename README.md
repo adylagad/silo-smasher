@@ -33,6 +33,8 @@ airbyte-synthetic-data-pipeline/
       fastino.py
     finance/
       variance_client.py
+    market_signals/
+      tavily_client.py
     web_navigation/
       navigator_client.py
     orchestrator/
@@ -151,6 +153,7 @@ Default behavior:
 - Yutori web navigation fetches latest internal portal PDF evidence when DB context is missing
 - Yutori gracefully falls back to local system-of-record summary when web credentials are unavailable
 - Numeric variance analysis classifies revenue dips as seasonal vs anomaly with CFO-style explanation
+- Tavily external search adds real-world economic context (for example major Japan news in last 24 hours)
 
 The orchestrator uses function tools:
 
@@ -159,6 +162,7 @@ The orchestrator uses function tools:
 - `get_latest_system_record_entries`: reads local manifest/context previews for grounding
 - `fetch_portal_report_with_web_navigation`: logs into internal portal and extracts latest PDF report evidence
 - `analyze_revenue_variance`: asks finance variance analysis if revenue dip is seasonal or anomalous
+- `search_external_economic_news`: checks outside-world economic news for a specific country/region
 
 Expected final output is structured JSON with:
 
@@ -206,8 +210,18 @@ Expected final output is structured JSON with:
    - `NUMERIC_TIMEOUT_SECONDS=20`
    - `NUMERIC_MATERIALITY_THRESHOLD_PCT=0.1`
    - `NUMERIC_FALLBACK_ENABLED=true`
-14. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
-15. Run `run-diagnostic-orchestrator`.
+14. Create a Tavily API key and add:
+   - `TAVILY_API_KEY=...`
+15. Keep Tavily defaults (or tune):
+   - `TAVILY_BASE_URL=https://api.tavily.com`
+   - `TAVILY_SEARCH_PATH=/search`
+   - `TAVILY_TIMEOUT_SECONDS=20`
+   - `TAVILY_TOPIC=news`
+   - `TAVILY_SEARCH_DEPTH=basic`
+   - `TAVILY_INCLUDE_ANSWER=basic`
+   - `TAVILY_FALLBACK_ENABLED=true`
+16. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
+17. Run `run-diagnostic-orchestrator`.
 
 ## Optional Senso Publish
 
@@ -230,3 +244,4 @@ build-agent-context \
 - Fastino Guardrails: `FASTINO_API_KEY`, `FASTINO_BASE_URL`, `FASTINO_GUARDRAILS_ENABLED`, `FASTINO_PII_THRESHOLD`, `FASTINO_ACTION_THRESHOLD`, `FASTINO_TIMEOUT_SECONDS`, `FASTINO_FAIL_MODE`
 - Yutori Web Navigation: `YUTORI_API_KEY`, `YUTORI_BASE_URL`, `YUTORI_POLL_SECONDS`, `YUTORI_TASK_TIMEOUT_SECONDS`, `YUTORI_HTTP_TIMEOUT_SECONDS`, `YUTORI_MAX_STEPS`
 - Numeric Finance: `NUMERIC_API_KEY`, `NUMERIC_BASE_URL`, `NUMERIC_VARIANCE_PATH`, `NUMERIC_TIMEOUT_SECONDS`, `NUMERIC_MATERIALITY_THRESHOLD_PCT`, `NUMERIC_FALLBACK_ENABLED`
+- Tavily External Search: `TAVILY_API_KEY`, `TAVILY_BASE_URL`, `TAVILY_SEARCH_PATH`, `TAVILY_TIMEOUT_SECONDS`, `TAVILY_TOPIC`, `TAVILY_SEARCH_DEPTH`, `TAVILY_INCLUDE_ANSWER`, `TAVILY_FALLBACK_ENABLED`

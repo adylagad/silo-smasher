@@ -243,7 +243,34 @@ This document explains how and why each integrated tool is used, phase by phase,
 - Input: `NUMERIC_API_KEY` and Numeric runtime vars.
 - Output: `seasonal/anomaly` classification with CFO-style explanation.
 
-## Phase 9: End-to-End Runtime Sequence
+## Phase 9: Tavily External-World Signals
+
+### Why this phase exists
+- Validate internal variance findings against real-world events.
+- Add external economic context for regional revenue declines.
+
+### Tool used
+- Tavily Search API.
+
+### How it is used
+- Exposed as orchestrator tool: `search_external_economic_news`.
+- Typical usage after finance variance flags regional decline.
+- Example query pattern: \"Major economic news in Japan in the last 24 hours\".
+- If `TAVILY_API_KEY` is missing or request fails, returns a fallback with suggested manual queries.
+
+### API endpoint used
+- `POST /search`
+
+### Code references
+- `src/airbyte_synthetic_data_pipeline/market_signals/tavily_client.py`
+- `src/airbyte_synthetic_data_pipeline/orchestrator/tools.py`
+- `src/airbyte_synthetic_data_pipeline/orchestrator/agent.py`
+
+### Key inputs and outputs
+- Input: `TAVILY_API_KEY` and Tavily runtime vars.
+- Output: answer summary plus article links/snippets for external signals.
+
+## Phase 10: End-to-End Runtime Sequence
 
 1. Pull or reuse source data through Airbyte.
 2. Normalize into deterministic agent-ready context.
@@ -253,6 +280,7 @@ This document explains how and why each integrated tool is used, phase by phase,
 6. Apply Fastino guardrails before provider calls and tool execution.
 7. If DB evidence is missing, fetch latest internal portal report through Yutori (or local fallback).
 8. If revenue dips, run Numeric variance analysis for CFO-level classification.
+9. If a regional external cause is plausible, run Tavily search for recent economic events.
 
 ## Tool-to-Phase Matrix
 
@@ -268,6 +296,7 @@ This document explains how and why each integrated tool is used, phase by phase,
 | Fastino API | 6 | PII redaction and risky-action blocking |
 | Yutori Browsing API | 7 | Web-portal evidence capture when APIs are unavailable |
 | Numeric Variance API | 8 | Finance-grade seasonal vs anomaly classification for revenue dips |
+| Tavily Search API | 9 | Outside-world economic signal detection for root-cause support |
 
 ## Notes on Defaults vs Unique Secrets
 
