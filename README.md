@@ -86,6 +86,17 @@ pip install -r requirements.txt && pip install -e .
 cp .env.example .env   # fill in API keys
 ```
 
+### Mock Mode For Unavailable APIs
+
+If sponsor APIs are temporarily unavailable, keep the demo flowing with deterministic mock payloads:
+
+```bash
+SPONSOR_MOCK_DATA_ENABLED=true
+```
+
+This preserves existing local fallbacks and adds richer mock outputs for Numeric, Tavily, Yutori, Modulate, and Senso tool calls.
+Set it to `false` after all live API keys are stable.
+
 ### 1. Build local context (no Airbyte needed)
 
 ```bash

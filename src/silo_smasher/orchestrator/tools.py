@@ -9,6 +9,7 @@ from silo_smasher.finance import RevenueVarianceClient
 from silo_smasher.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
 from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
 from silo_smasher.market_signals import ExternalNewsSearchClient
+from silo_smasher.mock_data import mock_data_enabled, mock_senso_content
 from silo_smasher.senso.client import SensoClient, SensoConfig
 from silo_smasher.structured_query import (
     StructuredQuerySettings,
@@ -342,6 +343,13 @@ class DiagnosticToolRuntime:
             fallback = self._get_latest_system_record_entries(
                 {"count": 1, "include_context_preview": True}
             )
+            if mock_data_enabled():
+                mock_payload = mock_senso_content(
+                    content_id=content_id,
+                    reason=f"Senso content retrieval failed: {exc}",
+                )
+                mock_payload["local_context"] = fallback
+                return mock_payload
             return {
                 "source": "local_fallback",
                 "requested_content_id": content_id,

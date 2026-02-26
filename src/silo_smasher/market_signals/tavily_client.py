@@ -7,6 +7,8 @@ from typing import Any
 
 import requests
 
+from silo_smasher.mock_data import mock_data_enabled, mock_external_news
+
 
 @dataclass
 class TavilySearchSettings:
@@ -75,12 +77,22 @@ class ExternalNewsSearchClient:
         clamped_results = max(1, min(int(max_results), 10))
 
         if not self._settings.api_key:
-            return self._fallback_response(
+            local_fallback = self._fallback_response(
                 country=target_country,
                 query=resolved_query,
                 hours_back=clamped_hours,
                 reason="TAVILY_API_KEY is not configured.",
             )
+            if mock_data_enabled():
+                mock_payload = mock_external_news(
+                    country=target_country,
+                    query=resolved_query,
+                    hours_back=clamped_hours,
+                    reason="TAVILY_API_KEY is not configured.",
+                )
+                mock_payload["local_fallback"] = local_fallback
+                return mock_payload
+            return local_fallback
 
         url = f"{self._settings.base_url}{self._settings.search_path}"
         headers = {
@@ -117,12 +129,22 @@ class ExternalNewsSearchClient:
             )
         except Exception as exc:
             if self._settings.fallback_enabled:
-                return self._fallback_response(
+                local_fallback = self._fallback_response(
                     country=target_country,
                     query=resolved_query,
                     hours_back=clamped_hours,
                     reason=f"Tavily API call failed: {exc}",
                 )
+                if mock_data_enabled():
+                    mock_payload = mock_external_news(
+                        country=target_country,
+                        query=resolved_query,
+                        hours_back=clamped_hours,
+                        reason=f"Tavily API call failed: {exc}",
+                    )
+                    mock_payload["local_fallback"] = local_fallback
+                    return mock_payload
+                return local_fallback
             return {
                 "error": "tavily_search_failed",
                 "detail": str(exc),

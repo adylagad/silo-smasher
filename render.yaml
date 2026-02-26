@@ -18,6 +18,8 @@ services:
         value: openai
       - key: ORCHESTRATOR_ENABLE_GEMINI_FALLBACK
         value: "true"
+      - key: SPONSOR_MOCK_DATA_ENABLED
+        value: "true"
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL

@@ -7,6 +7,8 @@ from typing import Any
 
 import requests
 
+from silo_smasher.mock_data import mock_data_enabled, mock_voice_analysis
+
 
 STRESS_TERMS = {
     "stressed",
@@ -96,11 +98,20 @@ class VoiceCommandAnalyzer:
             return {"error": "utterance or audio_url is required"}
 
         if not self._settings.api_key:
-            return self._fallback_analysis(
+            local_fallback = self._fallback_analysis(
                 utterance=text,
                 source="local_fallback",
                 reason="MODULATE_API_KEY is not configured.",
             )
+            if mock_data_enabled():
+                mock_payload = mock_voice_analysis(
+                    utterance=text,
+                    reason="MODULATE_API_KEY is not configured.",
+                    stress_threshold=self._settings.stress_threshold,
+                )
+                mock_payload["local_fallback"] = local_fallback
+                return mock_payload
+            return local_fallback
 
         url = f"{self._settings.base_url}{self._settings.analyze_path}"
         headers = {
@@ -130,11 +141,20 @@ class VoiceCommandAnalyzer:
             return self._normalize_provider_response(parsed, utterance=text)
         except Exception as exc:
             if self._settings.fallback_enabled:
-                return self._fallback_analysis(
+                local_fallback = self._fallback_analysis(
                     utterance=text,
                     source="local_fallback",
                     reason=f"Modulate API call failed: {exc}",
                 )
+                if mock_data_enabled():
+                    mock_payload = mock_voice_analysis(
+                        utterance=text,
+                        reason=f"Modulate API call failed: {exc}",
+                        stress_threshold=self._settings.stress_threshold,
+                    )
+                    mock_payload["local_fallback"] = local_fallback
+                    return mock_payload
+                return local_fallback
             return {
                 "error": "modulate_analysis_failed",
                 "detail": str(exc),

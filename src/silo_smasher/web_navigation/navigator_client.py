@@ -9,6 +9,8 @@ from typing import Any
 
 import requests
 
+from silo_smasher.mock_data import mock_data_enabled, mock_portal_report
+
 
 @dataclass
 class NavigatorSettings:
@@ -59,11 +61,20 @@ class NavigatorClient:
         timeout_seconds: float | None = None,
     ) -> dict[str, Any]:
         if not self._settings.api_key:
-            return self._local_portal_fallback(
+            local_fallback = self._local_portal_fallback(
                 portal_url=portal_url,
                 report_hint=report_hint,
                 reason="YUTORI_API_KEY is not configured.",
             )
+            if mock_data_enabled():
+                mock_payload = mock_portal_report(
+                    portal_url=portal_url,
+                    report_hint=report_hint,
+                    reason="YUTORI_API_KEY is not configured.",
+                )
+                mock_payload["local_fallback"] = local_fallback
+                return mock_payload
+            return local_fallback
 
         instruction = self._build_instruction(report_hint=report_hint, task_prompt=task_prompt)
         chosen_steps = self._clamp_steps(max_steps if max_steps is not None else self._settings.max_steps)
@@ -75,7 +86,7 @@ class NavigatorClient:
             max_steps=chosen_steps,
         )
         if "error" in created_payload:
-            return self._local_portal_fallback(
+            local_fallback = self._local_portal_fallback(
                 portal_url=portal_url,
                 report_hint=report_hint,
                 reason=(
@@ -83,6 +94,19 @@ class NavigatorClient:
                     f"{created_payload.get('detail') or created_payload.get('error')}"
                 ),
             )
+            if mock_data_enabled():
+                mock_payload = mock_portal_report(
+                    portal_url=portal_url,
+                    report_hint=report_hint,
+                    reason=(
+                        f"Yutori task creation failed. "
+                        f"{created_payload.get('detail') or created_payload.get('error')}"
+                    ),
+                )
+                mock_payload["local_fallback"] = local_fallback
+                mock_payload["provider_error"] = created_payload
+                return mock_payload
+            return local_fallback
 
         task_id = self._extract_task_id(created_payload)
         if not task_id:
@@ -96,6 +120,26 @@ class NavigatorClient:
         while time.monotonic() < deadline:
             current_payload = self._retrieve_task(task_id)
             if "error" in current_payload:
+                if mock_data_enabled():
+                    local_fallback = self._local_portal_fallback(
+                        portal_url=portal_url,
+                        report_hint=report_hint,
+                        reason=(
+                            f"Yutori task retrieval failed. "
+                            f"{current_payload.get('detail') or current_payload.get('error')}"
+                        ),
+                    )
+                    mock_payload = mock_portal_report(
+                        portal_url=portal_url,
+                        report_hint=report_hint,
+                        reason=(
+                            f"Yutori task retrieval failed. "
+                            f"{current_payload.get('detail') or current_payload.get('error')}"
+                        ),
+                    )
+                    mock_payload["local_fallback"] = local_fallback
+                    mock_payload["provider_error"] = current_payload
+                    return mock_payload
                 return current_payload
             last_payload = current_payload
             status = str(current_payload.get("status", "")).lower()
@@ -107,21 +151,51 @@ class NavigatorClient:
                     "result": current_payload,
                 }
             if status in {"failed", "cancelled", "canceled"}:
-                return {
+                failed_payload = {
                     "task_id": task_id,
                     "status": status,
                     "portal_url": portal_url,
                     "result": current_payload,
                 }
+                if mock_data_enabled():
+                    local_fallback = self._local_portal_fallback(
+                        portal_url=portal_url,
+                        report_hint=report_hint,
+                        reason=f"Yutori task ended with status={status}.",
+                    )
+                    mock_payload = mock_portal_report(
+                        portal_url=portal_url,
+                        report_hint=report_hint,
+                        reason=f"Yutori task ended with status={status}.",
+                    )
+                    mock_payload["local_fallback"] = local_fallback
+                    mock_payload["provider_error"] = failed_payload
+                    return mock_payload
+                return failed_payload
             time.sleep(self._settings.poll_seconds)
 
-        return {
+        timeout_payload = {
             "error": "yutori_task_timeout",
             "task_id": task_id,
             "portal_url": portal_url,
             "timeout_seconds": timeout_limit,
             "last_payload": last_payload,
         }
+        if mock_data_enabled():
+            local_fallback = self._local_portal_fallback(
+                portal_url=portal_url,
+                report_hint=report_hint,
+                reason=f"Yutori task timed out after {timeout_limit:.0f}s.",
+            )
+            mock_payload = mock_portal_report(
+                portal_url=portal_url,
+                report_hint=report_hint,
+                reason=f"Yutori task timed out after {timeout_limit:.0f}s.",
+            )
+            mock_payload["local_fallback"] = local_fallback
+            mock_payload["provider_error"] = timeout_payload
+            return mock_payload
+        return timeout_payload
 
     def _local_portal_fallback(
         self,

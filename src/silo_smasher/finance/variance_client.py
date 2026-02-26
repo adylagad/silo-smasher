@@ -6,6 +6,8 @@ from typing import Any
 
 import requests
 
+from silo_smasher.mock_data import mock_data_enabled, mock_revenue_variance
+
 
 @dataclass
 class RevenueVarianceSettings:
@@ -57,7 +59,7 @@ class RevenueVarianceClient:
         notes: str | None = None,
     ) -> dict[str, Any]:
         if not self._settings.api_key:
-            return self._fallback_explanation(
+            local_fallback = self._fallback_explanation(
                 current_revenue=current_revenue,
                 prior_revenue=prior_revenue,
                 period_label=period_label,
@@ -67,6 +69,19 @@ class RevenueVarianceClient:
                 source="local_fallback",
                 reason="NUMERIC_API_KEY is not configured.",
             )
+            if mock_data_enabled():
+                mock_payload = mock_revenue_variance(
+                    current_revenue=current_revenue,
+                    prior_revenue=prior_revenue,
+                    period_label=period_label,
+                    region=region,
+                    historical_change_pct=historical_change_pct,
+                    reason="NUMERIC_API_KEY is not configured.",
+                )
+                mock_payload["local_fallback"] = local_fallback
+                mock_payload["notes"] = notes
+                return mock_payload
+            return local_fallback
 
         endpoint_path = self._settings.variance_path
         if not endpoint_path.startswith("/"):
@@ -110,7 +125,7 @@ class RevenueVarianceClient:
                     "detail": str(exc),
                     "url": url,
                 }
-            return self._fallback_explanation(
+            local_fallback = self._fallback_explanation(
                 current_revenue=current_revenue,
                 prior_revenue=prior_revenue,
                 period_label=period_label,
@@ -120,6 +135,19 @@ class RevenueVarianceClient:
                 source="local_fallback",
                 reason=f"Numeric API call failed: {exc}",
             )
+            if mock_data_enabled():
+                mock_payload = mock_revenue_variance(
+                    current_revenue=current_revenue,
+                    prior_revenue=prior_revenue,
+                    period_label=period_label,
+                    region=region,
+                    historical_change_pct=historical_change_pct,
+                    reason=f"Numeric API call failed: {exc}",
+                )
+                mock_payload["local_fallback"] = local_fallback
+                mock_payload["notes"] = notes
+                return mock_payload
+            return local_fallback
 
     @staticmethod
     def _normalize_provider_payload(payload: dict[str, Any]) -> dict[str, Any]:
