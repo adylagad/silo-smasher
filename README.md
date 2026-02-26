@@ -124,7 +124,7 @@ Output includes:
 7. Run `sync-graph-context`.
 8. Run `query-graph-rag` and confirm you see `why_connected_paths` and `customer_order_ticket_links`.
 
-## OpenAI Orchestrator (GPT + Tools)
+## Orchestrator (OpenAI Primary, Gemini Backup)
 
 ```bash
 cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
@@ -132,6 +132,11 @@ source .venv/bin/activate
 run-diagnostic-orchestrator \
   --question "Sales are down 12% week-over-week. Generate hypotheses and test with tools."
 ```
+
+Default behavior:
+
+- OpenAI is the primary provider
+- Gemini is an automatic backup if OpenAI fails (for example quota/rate limits)
 
 The orchestrator uses function tools:
 
@@ -147,17 +152,22 @@ Expected final output is structured JSON with:
 - likely root cause
 - suggested next queries
 
-## OpenAI Setup (Step by Step)
+## Orchestrator Setup (Step by Step)
 
 1. Create an OpenAI API key.
 2. Put this in `.env`: `OPENAI_API_KEY=...`
-3. Optional model override:
+3. Create a Gemini API key.
+4. Put this in `.env`: `GEMINI_API_KEY=...`
+5. Keep provider routing defaults for your preference (OpenAI primary, Gemini backup):
+   - `ORCHESTRATOR_PRIMARY_PROVIDER=openai`
+   - `ORCHESTRATOR_ENABLE_GEMINI_FALLBACK=true`
+6. Optional model overrides:
    - `OPENAI_MODEL=gpt-4o` (default)
-   - swap to your preferred newer model when available.
-4. Optional tool-call loop cap:
+   - `GEMINI_MODEL=gemini-2.5-flash` (fallback default)
+7. Optional tool-call loop cap:
    - `OPENAI_MAX_TOOL_ROUNDS=8`
-5. Ensure GraphRAG and Senso credentials are also configured if you want those tools active.
-6. Run `run-diagnostic-orchestrator`.
+8. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
+9. Run `run-diagnostic-orchestrator`.
 
 ## Optional Senso Publish
 
@@ -176,4 +186,4 @@ build-agent-context \
 - Airbyte: `AIRBYTE_SERVER_URL`, `AIRBYTE_BEARER_TOKEN` or `AIRBYTE_USERNAME` + `AIRBYTE_PASSWORD`, `AIRBYTE_WORKSPACE_ID`, `AIRBYTE_SOURCE_DEFINITION_ID`, `AIRBYTE_DESTINATION_ID`
 - Senso: `SENSO_API_KEY`, `SENSO_BASE_URL`, `SENSO_POLL_SECONDS`, `SENSO_TIMEOUT_SECONDS`
 - Neo4j/AWS: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`, `NEO4J_VECTOR_INDEX`, `AWS_REGION`, `BEDROCK_EMBEDDING_MODEL_ID`
-- OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOOL_ROUNDS`
+- Orchestrator/LLM: `ORCHESTRATOR_PRIMARY_PROVIDER`, `ORCHESTRATOR_ENABLE_GEMINI_FALLBACK`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOOL_ROUNDS`, `GEMINI_API_KEY`, `GEMINI_MODEL`
