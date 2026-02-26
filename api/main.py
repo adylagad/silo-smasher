@@ -55,10 +55,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve the demo frontend at /app/* and redirect / → /app/index.html
+# Serve the React frontend — prefer the Vite build output (frontend/dist/),
+# fall back to the raw frontend/ directory for local dev without a build step.
 import pathlib as _pathlib
-_frontend_dir = _pathlib.Path(__file__).parent.parent / "frontend"
+_frontend_dir = _pathlib.Path(__file__).parent.parent / "frontend" / "dist"
+if not _frontend_dir.is_dir():
+    _frontend_dir = _pathlib.Path(__file__).parent.parent / "frontend"
 if _frontend_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=str(_frontend_dir / "assets")), name="assets") if (_frontend_dir / "assets").is_dir() else None
     app.mount("/app", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
 
 

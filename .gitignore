@@ -7,3 +7,7 @@ __pycache__/
 data/system_of_record/**/*.json
 data/system_of_record/**/*.jsonl
 !data/system_of_record/**/.gitkeep
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

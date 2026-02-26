@@ -1,3 +1,16 @@
+# ── Stage 1: build the React frontend ──────────────────────────────────────
+FROM node:20-slim AS frontend-build
+
+WORKDIR /build/frontend
+
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install --frozen-lockfile
+
+COPY frontend/ ./
+RUN npm run build
+
+
+# ── Stage 2: Python API ──────────────────────────────────────────────────────
 FROM python:3.13-slim
 
 WORKDIR /app
@@ -18,10 +31,12 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 RUN pip install --no-cache-dir -e .
 
-# Copy the API, frontend, and supporting files.
+# Copy the API and supporting files.
 COPY api/ ./api/
-COPY frontend/ ./frontend/
 COPY examples/ ./examples/
+
+# Copy the built frontend from Stage 1.
+COPY --from=frontend-build /build/frontend/dist ./frontend/dist
 
 # Pre-create the system-of-record directory tree so local fallbacks work.
 RUN mkdir -p data/system_of_record/raw_snapshots \
