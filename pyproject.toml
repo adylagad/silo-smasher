@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airbyte-synthetic-data-pipeline"
+version = "0.1.0"
+description = "Starter for pulling synthetic data through Airbyte."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "airbyte-api==0.53.0",
+  "python-dotenv==1.2.1",
+  "requests==2.32.5",
+]
+
+[project.scripts]
+build-agent-context = "airbyte_synthetic_data_pipeline.cli.build_agent_context:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

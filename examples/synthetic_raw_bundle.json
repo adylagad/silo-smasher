@@ -1,0 +1,93 @@
+{
+  "products": [
+    {
+      "created_at": "2026-02-26T10:00:00Z",
+      "id": 1,
+      "make": "Honda",
+      "model": "Civic",
+      "price": 24100,
+      "updated_at": "2026-02-26T10:00:00Z",
+      "year": 2024
+    },
+    {
+      "created_at": "2026-02-26T10:00:00Z",
+      "id": 2,
+      "make": "Toyota",
+      "model": "Corolla",
+      "price": 22900,
+      "updated_at": "2026-02-26T10:00:00Z",
+      "year": 2024
+    }
+  ],
+  "purchases": [
+    {
+      "added_to_cart_at": "2026-02-26T10:05:00Z",
+      "created_at": "2026-02-26T10:05:00Z",
+      "id": 1001,
+      "product_id": 1,
+      "purchased_at": "2026-02-26T10:10:00Z",
+      "returned_at": null,
+      "updated_at": "2026-02-26T10:10:00Z",
+      "user_id": 101
+    },
+    {
+      "added_to_cart_at": "2026-02-26T10:06:00Z",
+      "created_at": "2026-02-26T10:06:00Z",
+      "id": 1002,
+      "product_id": 2,
+      "purchased_at": null,
+      "returned_at": null,
+      "updated_at": "2026-02-26T10:06:00Z",
+      "user_id": 102
+    },
+    {
+      "added_to_cart_at": "2026-02-26T10:07:00Z",
+      "created_at": "2026-02-26T10:07:00Z",
+      "id": 1003,
+      "product_id": 1,
+      "purchased_at": "2026-02-26T10:09:00Z",
+      "returned_at": "2026-02-26T10:12:00Z",
+      "updated_at": "2026-02-26T10:12:00Z",
+      "user_id": 102
+    }
+  ],
+  "users": [
+    {
+      "address": {
+        "city": "Seattle",
+        "country_code": "US",
+        "postal_code": "98101",
+        "province": "",
+        "state": "WA"
+      },
+      "age": 32,
+      "created_at": "2026-02-26T10:00:00Z",
+      "email": "ava.ward@example.com",
+      "gender": "female",
+      "id": 101,
+      "language": "en",
+      "name": "Ava Ward",
+      "occupation": "Product Manager",
+      "updated_at": "2026-02-26T10:00:00Z"
+    },
+    {
+      "address": {
+        "city": "Austin",
+        "country_code": "US",
+        "postal_code": "73301",
+        "province": "",
+        "state": "TX"
+      },
+      "age": 28,
+      "created_at": "2026-02-26T10:00:00Z",
+      "email": "liam.khan@example.com",
+      "gender": "male",
+      "id": 102,
+      "language": "en",
+      "name": "Liam Khan",
+      "occupation": "Engineer",
+      "updated_at": "2026-02-26T10:00:00Z"
+    }
+  ]
+}
+
