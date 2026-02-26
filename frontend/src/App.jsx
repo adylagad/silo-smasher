@@ -38,9 +38,9 @@ export default function App() {
     >
       <Header apiStatus={apiStatus} onGuide={() => setGuideOpen(true)} />
 
-      <div className="flex-1 min-h-0 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
         {/* Context sidebar */}
-        <aside className="w-[268px] flex-shrink-0 overflow-y-auto border-r border-white/[0.05]">
+        <aside className="w-full md:w-[360px] md:max-w-[42vw] h-[48vh] md:h-auto flex-shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-white/[0.05]">
           <MetricPanel />
         </aside>
 
