@@ -1,90 +1,159 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, ChevronRight, Loader2, Sparkles, CheckCircle2, AlertCircle, HelpCircle } from 'lucide-react'
+import {
+  Send, Sparkles, Loader2, Search, RotateCcw, Zap,
+  CheckCircle2, AlertCircle, HelpCircle, ChevronRight,
+} from 'lucide-react'
 import { STEPS, STEP_DURATIONS, PRESETS, STATUS_META } from '../lib/data'
 
+// ── Small tool badge ──────────────────────────────────────────────────────────
 const ToolBadge = ({ name }) => (
-  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
+  <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-white/[0.05] text-zinc-500 border border-white/[0.07]">
     {name}
   </span>
 )
 
+// ── Horizontal step pipeline ──────────────────────────────────────────────────
+const StepPipeline = ({ activeStep }) => (
+  <div className="flex items-start px-8 py-5">
+    {STEPS.map((step, i) => {
+      const state = activeStep > i ? 'done' : activeStep === i ? 'active' : 'pending'
+      return (
+        <div key={step.label} className="flex items-center flex-1 last:flex-none">
+          {/* Node */}
+          <div className="flex flex-col items-center gap-1.5">
+            <motion.div
+              className={`w-9 h-9 rounded-full border-2 flex items-center justify-center
+                ${state === 'done'
+                  ? 'bg-indigo-500 border-indigo-400 shadow-lg shadow-indigo-500/30'
+                  : state === 'active'
+                  ? 'bg-indigo-500/15 border-indigo-500'
+                  : 'bg-white/[0.02] border-white/[0.08]'}`}
+              animate={state === 'active' ? { boxShadow: ['0 0 0 0 rgba(99,102,241,0.4)', '0 0 0 8px rgba(99,102,241,0)', '0 0 0 0 rgba(99,102,241,0)'] } : {}}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              {state === 'done'
+                ? <CheckCircle2 size={15} className="text-white" />
+                : state === 'active'
+                ? <Loader2 size={13} className="text-indigo-400 animate-spin" />
+                : <span className="text-[10px] font-bold text-zinc-700">{i + 1}</span>
+              }
+            </motion.div>
+            <span className={`text-[9px] font-medium text-center leading-tight w-16
+              ${state === 'pending' ? 'text-zinc-700' : state === 'active' ? 'text-indigo-300 font-semibold' : 'text-zinc-500'}`}>
+              {step.short}
+            </span>
+            {state !== 'pending' && (
+              <span className="text-[8px] text-zinc-700 text-center w-16 leading-tight truncate">{step.tool}</span>
+            )}
+          </div>
+          {/* Connector */}
+          {i < STEPS.length - 1 && (
+            <motion.div
+              className="flex-1 h-px mx-1.5 mb-7"
+              style={{ background: activeStep > i ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.05)' }}
+            />
+          )}
+        </div>
+      )
+    })}
+  </div>
+)
+
+// ── Hypothesis card ───────────────────────────────────────────────────────────
 const HypothesisCard = ({ hyp, index }) => {
   const meta = STATUS_META[hyp.status] ?? STATUS_META.inconclusive
-  const StatusIcon = hyp.status === 'supported' ? CheckCircle2 : hyp.status === 'rejected' ? AlertCircle : HelpCircle
+  const Icon = hyp.status === 'supported' ? CheckCircle2 : hyp.status === 'rejected' ? AlertCircle : HelpCircle
 
   return (
     <motion.div
-      className={`card border-l-2 ${meta.border} p-3 ${meta.bg}`}
-      initial={{ opacity: 0, x: 12 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.35, delay: index * 0.08 }}
+      className={`relative rounded-2xl border ${meta.border} overflow-hidden`}
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, delay: index * 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <p className="text-xs text-zinc-200 leading-relaxed flex-1">{hyp.title}</p>
-        <span className={`flex items-center gap-1 text-[10px] font-semibold shrink-0 ${meta.cls}`}>
-          <StatusIcon size={10} />
-          {meta.label}
-        </span>
-      </div>
+      {/* Tinted bg */}
+      <div className={`absolute inset-0 ${meta.bg}`} />
 
-      {/* Confidence bar */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[9px] text-zinc-500 w-14 shrink-0">Confidence</span>
-        <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
-          <motion.div
-            className={`h-full rounded-full bg-gradient-to-r ${meta.bar}`}
-            initial={{ width: 0 }}
-            animate={{ width: `${hyp.confidence}%` }}
-            transition={{ duration: 0.6, delay: index * 0.08 + 0.2 }}
-          />
+      <div className="relative flex gap-5 p-4 items-start">
+        {/* Big confidence number */}
+        <div className="shrink-0 text-center w-12">
+          <div className={`text-3xl font-black leading-none ${meta.cls} tabular-nums`}>
+            {hyp.confidence}
+          </div>
+          <div className={`text-[9px] font-bold ${meta.cls} opacity-60 mt-0.5`}>%</div>
         </div>
-        <span className={`text-[10px] font-semibold ${meta.cls} w-8 text-right shrink-0`}>
-          {hyp.confidence}%
-        </span>
-      </div>
 
-      {hyp.sources?.length > 0 && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] text-zinc-600">via</span>
-          {hyp.sources.map(s => <ToolBadge key={s} name={s} />)}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-zinc-200 leading-relaxed mb-2.5">{hyp.title}</p>
+
+          {/* Confidence bar */}
+          <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden mb-2.5">
+            <motion.div
+              className={`h-full rounded-full bg-gradient-to-r ${meta.bar}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${hyp.confidence}%` }}
+              transition={{ duration: 0.9, delay: index * 0.1 + 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {hyp.sources?.map(s => <ToolBadge key={s} name={s} />)}
+            </div>
+            <span className={`flex items-center gap-1 text-[10px] font-semibold ${meta.cls} shrink-0`}>
+              <Icon size={10} />
+              {meta.label}
+            </span>
+          </div>
         </div>
-      )}
+      </div>
     </motion.div>
   )
 }
 
-const StepRow = ({ step, state }) => {
-  // state: 'pending' | 'active' | 'done'
-  return (
-    <div className="flex items-center gap-2.5 py-1.5">
-      <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-        {state === 'done'
-          ? <CheckCircle2 size={14} className="text-indigo-400" />
-          : state === 'active'
-          ? <Loader2 size={12} className="text-indigo-400 animate-spin" />
-          : <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
-        }
+// ── Thinking animation (pulsing orb rings) ────────────────────────────────────
+const ThinkingOrb = ({ currentStep }) => (
+  <div className="flex flex-col items-center gap-5">
+    <div className="relative w-16 h-16">
+      {[0, 0.55, 1.1].map((delay, i) => (
+        <motion.div
+          key={i}
+          className="absolute inset-0 rounded-full border border-indigo-500/25"
+          animate={{ scale: [1, 2.6], opacity: [0.5, 0] }}
+          transition={{ duration: 2.2, delay, repeat: Infinity, ease: 'easeOut' }}
+        />
+      ))}
+      <div className="absolute inset-0 rounded-full bg-indigo-500/15 border border-indigo-500/40 flex items-center justify-center">
+        <Loader2 size={22} className="text-indigo-400 animate-spin" />
       </div>
-      <span className={`text-xs flex-1 ${state === 'pending' ? 'text-zinc-600' : state === 'active' ? 'text-zinc-200' : 'text-zinc-400'}`}>
-        {step.label}
-      </span>
-      {state !== 'pending' && <ToolBadge name={step.tool} />}
     </div>
-  )
-}
+    <div className="text-sm text-zinc-500 text-center">
+      <span className="text-zinc-400 font-medium">
+        {STEPS[Math.min(currentStep, STEPS.length - 1)]?.label ?? 'Analyzing'}
+      </span>
+      <motion.span
+        animate={{ opacity: [1, 0, 1] }}
+        transition={{ duration: 1.4, repeat: Infinity }}
+      >…</motion.span>
+    </div>
+    <p className="text-xs text-zinc-600 text-center max-w-xs">
+      Cross-referencing your data warehouse, knowledge graph, and live market signals.
+    </p>
+  </div>
+)
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function InvestigatePanel() {
   const [query, setQuery]           = useState('')
-  const [status, setStatus]         = useState('idle')  // idle | running | done | error
+  const [status, setStatus]         = useState('idle')
   const [activeStep, setActiveStep] = useState(-1)
   const [result, setResult]         = useState(null)
   const feedRef                     = useRef(null)
+  const inputRef                    = useRef(null)
 
   useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTop = feedRef.current.scrollHeight
-    }
+    if (feedRef.current) feedRef.current.scrollTop = feedRef.current.scrollHeight
   }, [activeStep, result])
 
   const runQuery = async (q) => {
@@ -96,7 +165,6 @@ export default function InvestigatePanel() {
     setActiveStep(0)
     setResult(null)
 
-    // Animate through steps
     let step = 0
     const advance = () => {
       step++
@@ -115,7 +183,7 @@ export default function InvestigatePanel() {
       })
       const data = await res.json()
       setResult(data)
-      setActiveStep(STEPS.length)  // all done
+      setActiveStep(STEPS.length)
       setStatus('done')
     } catch {
       setResult({ error: 'Could not reach the API. Is the backend running?' })
@@ -124,181 +192,272 @@ export default function InvestigatePanel() {
     }
   }
 
-  const handleKey = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      runQuery()
-    }
+  const reset = () => {
+    setStatus('idle')
+    setQuery('')
+    setResult(null)
+    setActiveStep(-1)
+    setTimeout(() => inputRef.current?.focus(), 150)
   }
 
-  const isRunning = status === 'running'
-
   return (
-    <div className="flex flex-col h-full gap-3 min-h-0">
-      {/* Query input */}
-      <div className="card p-3 flex-shrink-0">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <textarea
-              rows={2}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Describe the metric anomaly you want to investigate…"
-              disabled={isRunning}
-              className="w-full bg-transparent resize-none text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none leading-relaxed pr-2 disabled:opacity-50"
-            />
-          </div>
-          <button
-            onClick={() => runQuery()}
-            disabled={isRunning || !query.trim()}
-            className="self-end flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-          >
-            {isRunning
-              ? <Loader2 size={14} className="animate-spin text-white" />
-              : <Send size={14} className="text-white" />
-            }
-          </button>
-        </div>
+    <div className="absolute inset-0 flex flex-col">
+      <AnimatePresence mode="wait">
 
-        {/* Presets */}
+        {/* ══════════════════════════════════════════════════════════
+            IDLE — centered command interface
+        ══════════════════════════════════════════════════════════ */}
         {status === 'idle' && (
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {PRESETS.map(p => (
-              <button
-                key={p}
-                onClick={() => { setQuery(p); runQuery(p) }}
-                className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-700 rounded-md px-2 py-1 transition-colors"
-              >
-                <Sparkles size={8} />
-                {p.length > 42 ? p.slice(0, 42) + '…' : p}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Feed */}
-      <div
-        ref={feedRef}
-        className="flex-1 overflow-y-auto min-h-0 flex flex-col gap-2 pr-0.5"
-      >
-        <AnimatePresence mode="wait">
-          {status === 'idle' && (
+          <motion.div
+            key="idle"
+            className="flex-1 flex flex-col items-center justify-center px-10 py-16"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* Icon + eyebrow */}
             <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center h-full text-center py-10"
+              className="flex items-center gap-2 mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
             >
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-3">
-                <Sparkles size={20} className="text-indigo-400" />
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+                <Zap size={14} className="text-indigo-400" />
               </div>
-              <div className="text-sm font-semibold text-zinc-300 mb-1">Ready to investigate</div>
-              <div className="text-xs text-zinc-600 max-w-[220px]">
-                Ask about any metric drop or anomaly. Pick a preset above to see a live demo.
+              <span className="text-xs font-semibold text-indigo-400/80 tracking-widest uppercase">
+                Autonomous Root-Cause Analysis
+              </span>
+            </motion.div>
+
+            {/* Headline */}
+            <motion.h1
+              className="text-[2.2rem] font-black text-white text-center tracking-tight leading-tight mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              What happened to your metrics?
+            </motion.h1>
+            <motion.p
+              className="text-sm text-zinc-500 text-center mb-9 max-w-[400px] leading-relaxed"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              Describe any revenue drop, churn spike, or conversion miss.
+              Get a cross-silo brief powered by AI, graph traversal, and live market signals.
+            </motion.p>
+
+            {/* Command input */}
+            <motion.div
+              className="w-full max-w-2xl"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 }}
+            >
+              <div className="input-glow relative rounded-2xl border border-white/[0.09] bg-white/[0.04] transition-all duration-300">
+                <div className="flex items-start gap-3 p-4 pb-2">
+                  <Search size={15} className="text-zinc-600 mt-0.5 shrink-0" />
+                  <textarea
+                    ref={inputRef}
+                    rows={2}
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        runQuery()
+                      }
+                    }}
+                    placeholder="MRR is down 15% this week. Why did this happen?"
+                    className="flex-1 bg-transparent resize-none text-sm text-zinc-200 placeholder:text-zinc-600/70 focus:outline-none leading-relaxed"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex items-center justify-between px-4 pb-3 mt-1">
+                  <div className="flex items-center gap-2 text-[10px] text-zinc-700">
+                    <kbd className="px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.04] font-mono">↵</kbd>
+                    <span>to run</span>
+                    <span className="text-zinc-800 mx-0.5">·</span>
+                    <kbd className="px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.04] font-mono text-[9px]">Shift ↵</kbd>
+                    <span>newline</span>
+                  </div>
+                  <button
+                    onClick={() => runQuery()}
+                    disabled={!query.trim()}
+                    className="flex items-center gap-1.5 h-8 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-25 disabled:cursor-not-allowed text-white text-xs font-semibold transition-all duration-200 shadow-lg shadow-indigo-500/20"
+                  >
+                    Analyze
+                    <Send size={11} />
+                  </button>
+                </div>
               </div>
             </motion.div>
-          )}
 
-          {(status === 'running' || status === 'done' || status === 'error') && (
+            {/* Preset chips */}
             <motion.div
-              key="feed"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col gap-2"
+              className="flex flex-wrap justify-center gap-2 mt-5 max-w-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.38 }}
             >
-              {/* Steps */}
-              <div className="card p-3">
-                <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-2">
-                  Investigation Pipeline
-                </div>
-                {STEPS.map((step, i) => (
-                  <StepRow
-                    key={step.label}
-                    step={step}
-                    state={
-                      activeStep > i ? 'done'
-                      : activeStep === i ? 'active'
-                      : 'pending'
-                    }
-                  />
-                ))}
+              <span className="text-[11px] text-zinc-700 self-center">Try:</span>
+              {PRESETS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => { setQuery(p); runQuery(p) }}
+                  className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-200 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.07] hover:border-white/[0.14] rounded-full px-3 py-1.5 transition-all duration-200"
+                >
+                  <Sparkles size={9} className="text-indigo-400/60" />
+                  {p.length > 48 ? p.slice(0, 48) + '…' : p}
+                </button>
+              ))}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════
+            RUNNING / DONE — active investigation layout
+        ══════════════════════════════════════════════════════════ */}
+        {(status === 'running' || status === 'done' || status === 'error') && (
+          <motion.div
+            key="active"
+            className="flex-1 flex flex-col min-h-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {/* ── Compact query bar ── */}
+            <div className="flex-shrink-0 px-6 pt-5">
+              <div className="flex items-center gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+                <Search size={13} className="text-zinc-600 shrink-0" />
+                <p className="flex-1 text-sm text-zinc-300 leading-snug line-clamp-1">{query}</p>
+                {(status === 'done' || status === 'error') && (
+                  <button
+                    onClick={reset}
+                    className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-300 bg-white/[0.04] hover:bg-white/[0.07] border border-white/[0.07] rounded-lg px-2.5 py-1 transition-all shrink-0"
+                  >
+                    <RotateCcw size={10} />
+                    New
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* ── Step pipeline ── */}
+            <div className="flex-shrink-0">
+              <StepPipeline activeStep={activeStep} />
+            </div>
+
+            {/* ── Thinking / Results ── */}
+            <div className="flex-1 min-h-0 px-6 pb-6 overflow-y-auto" ref={feedRef}>
+
+              {/* Thinking state */}
+              {status === 'running' && (
+                <div className="flex items-center justify-center h-full">
+                  <ThinkingOrb currentStep={activeStep} />
+                </div>
+              )}
 
               {/* Results */}
-              {result && !result.error && (
-                <>
-                  {/* Brief */}
-                  {result.brief && (
+              {(status === 'done' || status === 'error') && (
+                <div className="flex flex-col gap-4">
+
+                  {/* Error */}
+                  {result?.error && (
                     <motion.div
-                      className="card p-3"
-                      initial={{ opacity: 0, y: 8 }}
+                      className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5"
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="flex items-center gap-2 text-rose-400 font-semibold mb-2 text-sm">
+                        <AlertCircle size={14} />
+                        Investigation failed
+                      </div>
+                      <p className="text-sm text-zinc-400">{result.error}</p>
+                    </motion.div>
+                  )}
+
+                  {/* ── Summary brief ── */}
+                  {result?.brief && (
+                    <motion.div
+                      className="rounded-2xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/8 to-violet-500/5 p-5"
+                      initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4 }}
                     >
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-2">
-                        Summary Brief
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-1 h-5 rounded-full bg-gradient-to-b from-indigo-400 to-violet-500" />
+                        <span className="text-xs font-semibold text-indigo-300/80 uppercase tracking-wider">
+                          Summary
+                        </span>
                       </div>
-                      <p className="text-xs text-zinc-300 leading-relaxed">{result.brief}</p>
+                      <p className="text-sm text-zinc-200 leading-relaxed">{result.brief}</p>
                     </motion.div>
                   )}
 
-                  {/* Hypotheses */}
-                  {result.hypotheses?.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold px-1">
-                        Hypotheses ({result.hypotheses.length})
+                  {/* ── Hypotheses ── */}
+                  {result?.hypotheses?.length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">
+                          Findings
+                        </span>
+                        <span className="text-[10px] text-zinc-700 bg-white/[0.04] border border-white/[0.07] rounded-full px-2 py-0.5 font-medium">
+                          {result.hypotheses.length}
+                        </span>
+                        <div className="flex-1 h-px bg-white/[0.05]" />
                       </div>
-                      {result.hypotheses.map((h, i) => (
-                        <HypothesisCard key={i} hyp={h} index={i} />
-                      ))}
+                      <div className="flex flex-col gap-3">
+                        {result.hypotheses.map((h, i) => (
+                          <HypothesisCard key={i} hyp={h} index={i} />
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  {/* Actions */}
-                  {result.actions?.length > 0 && (
+                  {/* ── Actions ── */}
+                  {result?.actions?.length > 0 && (
                     <motion.div
-                      className="card p-3"
-                      initial={{ opacity: 0, y: 8 }}
+                      className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5"
+                      initial={{ opacity: 0, y: 14 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.4, delay: 0.2 }}
                     >
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold mb-2">
-                        Recommended Actions
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-1 h-5 rounded-full bg-emerald-400" />
+                        <span className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">
+                          Recommended Actions
+                        </span>
                       </div>
-                      <ul className="flex flex-col gap-1.5">
+                      <ol className="flex flex-col gap-3">
                         {result.actions.map((a, i) => (
-                          <li key={i} className="flex items-start gap-2 text-xs text-zinc-300">
-                            <ChevronRight size={12} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                          <motion.li
+                            key={i}
+                            className="flex items-start gap-3 text-sm text-zinc-300"
+                            initial={{ opacity: 0, x: 8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: i * 0.07 + 0.3 }}
+                          >
+                            <span className="w-5 h-5 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-[9px] font-bold text-zinc-600 shrink-0 mt-0.5">
+                              {i + 1}
+                            </span>
                             {a}
-                          </li>
+                          </motion.li>
                         ))}
-                      </ul>
+                      </ol>
                     </motion.div>
                   )}
-                </>
-              )}
 
-              {/* Error state */}
-              {result?.error && (
-                <motion.div
-                  className="card border-l-2 border-l-rose-500 p-3 bg-rose-500/5"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <div className="flex items-center gap-2 text-rose-400 text-xs font-semibold mb-1">
-                    <AlertCircle size={12} />
-                    Investigation failed
-                  </div>
-                  <p className="text-[11px] text-zinc-400">{result.error}</p>
-                </motion.div>
+                </div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

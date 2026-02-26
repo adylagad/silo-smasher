@@ -8,7 +8,6 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState('checking')
   const [guideOpen, setGuideOpen] = useState(false)
 
-  // Health-check polling
   useEffect(() => {
     const check = async () => {
       try {
@@ -23,46 +22,41 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
-  // Auto-open guide on first visit
   useEffect(() => {
     if (!localStorage.getItem('silo_guide_seen')) {
-      const t = setTimeout(() => setGuideOpen(true), 600)
+      const t = setTimeout(() => setGuideOpen(true), 800)
       return () => clearTimeout(t)
     }
   }, [])
 
-  const handleCloseGuide = () => {
-    localStorage.setItem('silo_guide_seen', '1')
-    setGuideOpen(false)
-  }
-
   return (
-    <div className="flex flex-col h-full">
-      <Header
-        apiStatus={apiStatus}
-        onGuide={() => setGuideOpen(true)}
-      />
+    <div
+      className="flex flex-col h-full"
+      style={{
+        background: 'radial-gradient(ellipse 100% 55% at 50% -5%, rgba(99,102,241,0.18) 0%, #060610 60%)',
+      }}
+    >
+      <Header apiStatus={apiStatus} onGuide={() => setGuideOpen(true)} />
 
-      {/* Main layout */}
-      <div className="flex-1 min-h-0 grid grid-cols-[340px_1fr] gap-3 p-3">
-        {/* Left: metrics */}
-        <div className="overflow-y-auto min-h-0">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
+        {/* Left — context sidebar */}
+        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-white/[0.05] p-4 flex flex-col gap-3">
           <MetricPanel />
         </div>
 
-        {/* Right: investigation */}
-        <div className="card p-4 min-h-0 flex flex-col">
-          <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-              Root-Cause Investigation
-            </span>
-            <div className="flex-1 h-px bg-zinc-800" />
-          </div>
+        {/* Right — investigation canvas */}
+        <div className="flex-1 min-w-0 relative overflow-hidden dot-bg">
           <InvestigatePanel />
         </div>
       </div>
 
-      <GuideModal open={guideOpen} onClose={handleCloseGuide} />
+      <GuideModal
+        open={guideOpen}
+        onClose={() => {
+          localStorage.setItem('silo_guide_seen', '1')
+          setGuideOpen(false)
+        }}
+      />
     </div>
   )
 }

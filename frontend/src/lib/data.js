@@ -14,20 +14,20 @@ export const AVG_MRR = Math.round(
 )
 
 export const STATS = [
-  { label: 'Gross Revenue', value: '$84.5K',  color: 'text-white'       },
-  { label: 'WoW Change',    value: '−15.2%',  color: 'text-rose-400'    },
-  { label: 'Region',        value: 'UK / EU', color: 'text-amber-400'   },
-  { label: 'Conversion',    value: '61.4%',   color: 'text-rose-400'    },
-  { label: 'Return Rate',   value: '8.2%',    color: 'text-zinc-300'    },
-  { label: 'Open Tickets',  value: '+34%',    color: 'text-amber-400'   },
+  { label: 'WoW Change',   value: '−15.2%', color: 'text-rose-400'  },
+  { label: 'Region',       value: 'UK / EU', color: 'text-amber-400' },
+  { label: 'Conversion',   value: '61.4%',  color: 'text-rose-400'  },
+  { label: 'Return Rate',  value: '8.2%',   color: 'text-zinc-300'  },
+  { label: 'Open Tickets', value: '+34%',   color: 'text-amber-400' },
+  { label: 'Churn',        value: '8.0%',   color: 'text-rose-400'  },
 ]
 
 export const STEPS = [
-  { label: 'Generating hypotheses',       tool: 'OpenAI GPT-4o'  },
-  { label: 'Querying knowledge graph',    tool: 'Neo4j GraphRAG' },
-  { label: 'Finance variance analysis',   tool: 'Numeric'        },
-  { label: 'External economic signals',   tool: 'Tavily Search'  },
-  { label: 'Scoring & composing brief',   tool: 'Fastino Safety' },
+  { label: 'Generating hypotheses',     short: 'Hypotheses', tool: 'OpenAI GPT-4o'  },
+  { label: 'Querying knowledge graph',  short: 'Graph',      tool: 'Neo4j GraphRAG' },
+  { label: 'Finance variance analysis', short: 'Finance',    tool: 'Numeric'        },
+  { label: 'External economic signals', short: 'Signals',    tool: 'Tavily Search'  },
+  { label: 'Scoring & composing brief', short: 'Scoring',    tool: 'Fastino Safety' },
 ]
 
 export const STEP_DURATIONS = [900, 1100, 1000, 900, 750]
@@ -40,7 +40,7 @@ export const PRESETS = [
 ]
 
 export const STATUS_META = {
-  supported:    { label: '✓ Supported',    cls: 'text-emerald-400', bar: 'from-emerald-500 to-emerald-400', border: 'border-l-emerald-500', bg: 'bg-emerald-500/10' },
-  rejected:     { label: '✗ Ruled Out',    cls: 'text-rose-400',    bar: 'from-rose-500 to-rose-400',      border: 'border-l-rose-500',    bg: 'bg-rose-500/10'    },
-  inconclusive: { label: '? Inconclusive', cls: 'text-amber-400',   bar: 'from-amber-500 to-amber-400',    border: 'border-l-amber-500',   bg: 'bg-amber-500/10'   },
+  supported:    { label: 'Supported',    cls: 'text-emerald-400', bar: 'from-emerald-500 to-emerald-400', border: 'border-emerald-500/25', bg: 'bg-emerald-500/5'  },
+  rejected:     { label: 'Ruled Out',    cls: 'text-rose-400',    bar: 'from-rose-500 to-rose-400',      border: 'border-rose-500/25',    bg: 'bg-rose-500/5'     },
+  inconclusive: { label: 'Inconclusive', cls: 'text-amber-400',   bar: 'from-amber-500 to-amber-400',    border: 'border-amber-500/25',   bg: 'bg-amber-500/5'    },
 }
