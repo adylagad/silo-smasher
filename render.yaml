@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: diagnostic-api
+    name: silo-smasher
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free

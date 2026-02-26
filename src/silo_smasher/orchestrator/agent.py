@@ -47,7 +47,10 @@ Final answer JSON schema:
 class DiagnosticOrchestrator:
     def __init__(self, settings: OrchestratorSettings):
         self._settings = settings
-        self._openai_client = OpenAI()
+        openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+        self._openai_client: OpenAI | None = (
+            OpenAI(api_key=openai_key) if openai_key and openai_key not in {"__MISSING__", "__SET_ME__"} else None
+        )
         self._safety_engine = FastinoSafetyEngine.from_env()
 
     def run(self, question: str, extra_context: str | None = None) -> dict[str, Any]:
@@ -119,6 +122,8 @@ class DiagnosticOrchestrator:
         runtime: DiagnosticToolRuntime,
         safety_report: dict[str, Any],
     ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+        if self._openai_client is None:
+            return None, {"error": "openai_api_key_missing"}
         try:
             response = self._openai_client.responses.create(
                 model=self._settings.openai_model,
