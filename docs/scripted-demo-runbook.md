@@ -8,6 +8,27 @@ The current implementation is demo-safe even without provider keys because `ORCH
 
 ---
 
+## 0A. Deterministic Terminal Fallback (single command)
+
+If the UI/network is unstable during demo, run:
+
+```bash
+python demo/run_demo.py
+```
+
+This command:
+- loads `examples/uk_shipping_incident.json`
+- builds system-of-record artifacts under `demo/output/system_of_record`
+- runs internal signals + variance + external context tools
+- runs orchestrator in deterministic local-demo mode by default
+- writes final output to `demo/output/latest_demo_brief.json`
+
+Use this line while showing terminal output:
+
+"In deterministic mode, the same input always produces the same evidence-backed root-cause brief."
+
+---
+
 ## 0. Pre-Demo Check (2 minutes)
 
 - Open app: `https://silo-smasher.onrender.com`

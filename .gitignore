@@ -12,3 +12,6 @@ data/system_of_record/**/*.db
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# Demo artifacts
+demo/output/

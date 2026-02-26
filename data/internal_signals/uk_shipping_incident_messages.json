@@ -1,0 +1,92 @@
+[
+  {
+    "id": "sig-uk-001",
+    "source": "slack",
+    "channel": "ops-logistics",
+    "user": "chloe.ops",
+    "timestamp": "2026-02-26T08:41:00Z",
+    "text": "Heads up: UK Postal Service union action starts at 09:00 UTC. Expect nationwide delivery delays.",
+    "tags": ["uk", "shipping", "postal", "incident", "sev2"]
+  },
+  {
+    "id": "sig-uk-002",
+    "source": "slack",
+    "channel": "eng-incidents",
+    "user": "leo.platform",
+    "timestamp": "2026-02-26T09:08:00Z",
+    "text": "SEV2 opened: UK checkout retries climbing after this morning release. Monitoring payment callback latency.",
+    "tags": ["uk", "checkout", "incident", "payment", "sev2"]
+  },
+  {
+    "id": "sig-uk-003",
+    "source": "jira",
+    "channel": "jira-incidents",
+    "user": "system",
+    "timestamp": "2026-02-26T09:12:00Z",
+    "text": "INC-2381 created: UK shipment confirmations delayed for partner ship_uk_mail.",
+    "tags": ["uk", "shipping_partner", "ship_uk_mail", "logistics"]
+  },
+  {
+    "id": "sig-uk-004",
+    "source": "slack",
+    "channel": "support-escalations",
+    "user": "nora.support",
+    "timestamp": "2026-02-26T09:19:00Z",
+    "text": "UK customers report orders stuck in cart when delivery option is UK Postal Service.",
+    "tags": ["uk", "support", "cart", "shipping"]
+  },
+  {
+    "id": "sig-uk-005",
+    "source": "slack",
+    "channel": "sales-uk",
+    "user": "adam.sales",
+    "timestamp": "2026-02-26T09:24:00Z",
+    "text": "Pipeline risk: 3 enterprise accounts paused checkout pending shipping ETA clarity.",
+    "tags": ["uk", "sales", "pipeline", "revenue-risk"]
+  },
+  {
+    "id": "sig-uk-006",
+    "source": "slack",
+    "channel": "finance-daily",
+    "user": "mia.finance",
+    "timestamp": "2026-02-26T09:31:00Z",
+    "text": "UK run-rate dropped versus yesterday morning window. Correlates with logistics incident timeline.",
+    "tags": ["uk", "finance", "variance", "revenue"]
+  },
+  {
+    "id": "sig-uk-007",
+    "source": "jira",
+    "channel": "jira-incidents",
+    "user": "system",
+    "timestamp": "2026-02-26T09:37:00Z",
+    "text": "INC-2381 updated: reroute path to ship_fastlane enabled for part of UK traffic.",
+    "tags": ["uk", "mitigation", "ship_fastlane", "shipping"]
+  },
+  {
+    "id": "sig-uk-008",
+    "source": "slack",
+    "channel": "eng-incidents",
+    "user": "ivy.release",
+    "timestamp": "2026-02-26T09:44:00Z",
+    "text": "Checkout patch deployed for UK delivery selector; error rate now trending down.",
+    "tags": ["uk", "checkout", "mitigation", "release"]
+  },
+  {
+    "id": "sig-uk-009",
+    "source": "slack",
+    "channel": "ops-logistics",
+    "user": "chloe.ops",
+    "timestamp": "2026-02-26T09:52:00Z",
+    "text": "Still seeing backlogs on ship_uk_mail. Keep rerouting high-priority orders to ship_fastlane.",
+    "tags": ["uk", "shipping_partner", "ship_uk_mail", "reroute"]
+  },
+  {
+    "id": "sig-uk-010",
+    "source": "slack",
+    "channel": "exec-briefs",
+    "user": "vp-ops",
+    "timestamp": "2026-02-26T10:05:00Z",
+    "text": "Executive note: UK demand is stable, but conversion is down due to fulfillment uncertainty and checkout friction.",
+    "tags": ["uk", "executive", "root-cause", "conversion"]
+  }
+]

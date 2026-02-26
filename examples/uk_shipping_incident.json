@@ -1,0 +1,513 @@
+{
+  "scenario": {
+    "name": "uk_shipping_partner_strike",
+    "affected_country_code": "UK",
+    "strike_started_at": "2026-02-26T09:00:00Z",
+    "affected_shipping_partner_id": "ship_uk_mail",
+    "affected_shipping_partner_name": "UK Postal Service",
+    "default_question": "MRR is down 15% this week in the UK. Why?",
+    "expected_story": "Most of the UK revenue drop is tied to orders routed through UK Postal Service after the strike started.",
+    "internal_signals_path": "data/internal_signals/uk_shipping_incident_messages.json"
+  },
+  "users": [
+    {
+      "id": 101,
+      "name": "Amelia Carter",
+      "email": "amelia.carter@example.com",
+      "age": 34,
+      "gender": "female",
+      "language": "en",
+      "occupation": "Operations Manager",
+      "address": {
+        "city": "London",
+        "state": "England",
+        "province": "",
+        "postal_code": "EC1A 1BB",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 102,
+      "name": "Noah Blake",
+      "email": "noah.blake@example.com",
+      "age": 31,
+      "gender": "male",
+      "language": "en",
+      "occupation": "Product Lead",
+      "address": {
+        "city": "Manchester",
+        "state": "England",
+        "province": "",
+        "postal_code": "M1 1AE",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 103,
+      "name": "Olivia Hughes",
+      "email": "olivia.hughes@example.com",
+      "age": 29,
+      "gender": "female",
+      "language": "en",
+      "occupation": "Analyst",
+      "address": {
+        "city": "Leeds",
+        "state": "England",
+        "province": "",
+        "postal_code": "LS1 1UR",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 104,
+      "name": "Ethan Price",
+      "email": "ethan.price@example.com",
+      "age": 37,
+      "gender": "male",
+      "language": "en",
+      "occupation": "Finance Director",
+      "address": {
+        "city": "Birmingham",
+        "state": "England",
+        "province": "",
+        "postal_code": "B1 1AA",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 105,
+      "name": "Mia Turner",
+      "email": "mia.turner@example.com",
+      "age": 33,
+      "gender": "female",
+      "language": "en",
+      "occupation": "Customer Success",
+      "address": {
+        "city": "Liverpool",
+        "state": "England",
+        "province": "",
+        "postal_code": "L1 8JQ",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 106,
+      "name": "Liam Reed",
+      "email": "liam.reed@example.com",
+      "age": 30,
+      "gender": "male",
+      "language": "en",
+      "occupation": "Software Engineer",
+      "address": {
+        "city": "Bristol",
+        "state": "England",
+        "province": "",
+        "postal_code": "BS1 4DJ",
+        "country_code": "UK"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 201,
+      "name": "Ava Brooks",
+      "email": "ava.brooks@example.com",
+      "age": 35,
+      "gender": "female",
+      "language": "en",
+      "occupation": "VP Sales",
+      "address": {
+        "city": "New York",
+        "state": "NY",
+        "province": "",
+        "postal_code": "10001",
+        "country_code": "US"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 202,
+      "name": "Lucas Ward",
+      "email": "lucas.ward@example.com",
+      "age": 32,
+      "gender": "male",
+      "language": "en",
+      "occupation": "Account Executive",
+      "address": {
+        "city": "Austin",
+        "state": "TX",
+        "province": "",
+        "postal_code": "73301",
+        "country_code": "US"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 203,
+      "name": "Sophia Gray",
+      "email": "sophia.gray@example.com",
+      "age": 28,
+      "gender": "female",
+      "language": "en",
+      "occupation": "Marketing Manager",
+      "address": {
+        "city": "Seattle",
+        "state": "WA",
+        "province": "",
+        "postal_code": "98101",
+        "country_code": "US"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 204,
+      "name": "James Cole",
+      "email": "james.cole@example.com",
+      "age": 36,
+      "gender": "male",
+      "language": "en",
+      "occupation": "Director",
+      "address": {
+        "city": "Chicago",
+        "state": "IL",
+        "province": "",
+        "postal_code": "60601",
+        "country_code": "US"
+      },
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    }
+  ],
+  "products": [
+    {
+      "id": 1,
+      "make": "Silo",
+      "model": "Enterprise Annual",
+      "year": 2026,
+      "price": 12000,
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "make": "Silo",
+      "model": "Automation Add-on",
+      "year": 2026,
+      "price": 6000,
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    },
+    {
+      "id": 3,
+      "make": "Silo",
+      "model": "Growth Plan",
+      "year": 2026,
+      "price": 9000,
+      "created_at": "2026-02-20T08:00:00Z",
+      "updated_at": "2026-02-20T08:00:00Z"
+    }
+  ],
+  "purchases": [
+    {
+      "id": 5001,
+      "user_id": 101,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:02:00Z",
+      "purchased_at": "2026-02-25T08:10:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:02:00Z",
+      "updated_at": "2026-02-25T08:10:00Z"
+    },
+    {
+      "id": 5002,
+      "user_id": 102,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:05:00Z",
+      "purchased_at": "2026-02-25T08:13:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:05:00Z",
+      "updated_at": "2026-02-25T08:13:00Z"
+    },
+    {
+      "id": 5003,
+      "user_id": 103,
+      "product_id": 3,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:10:00Z",
+      "purchased_at": "2026-02-25T08:17:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:10:00Z",
+      "updated_at": "2026-02-25T08:17:00Z"
+    },
+    {
+      "id": 5004,
+      "user_id": 104,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:16:00Z",
+      "purchased_at": "2026-02-25T08:23:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:16:00Z",
+      "updated_at": "2026-02-25T08:23:00Z"
+    },
+    {
+      "id": 5005,
+      "user_id": 105,
+      "product_id": 2,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:21:00Z",
+      "purchased_at": "2026-02-25T08:28:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:21:00Z",
+      "updated_at": "2026-02-25T08:28:00Z"
+    },
+    {
+      "id": 5006,
+      "user_id": 106,
+      "product_id": 3,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:28:00Z",
+      "purchased_at": "2026-02-25T08:35:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:28:00Z",
+      "updated_at": "2026-02-25T08:35:00Z"
+    },
+    {
+      "id": 5007,
+      "user_id": 101,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-25T08:36:00Z",
+      "purchased_at": "2026-02-25T08:42:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:36:00Z",
+      "updated_at": "2026-02-25T08:42:00Z"
+    },
+    {
+      "id": 5008,
+      "user_id": 102,
+      "product_id": 3,
+      "shipping_partner_id": "ship_fastlane",
+      "shipping_partner_name": "Fastlane Express",
+      "added_to_cart_at": "2026-02-25T08:41:00Z",
+      "purchased_at": "2026-02-25T08:47:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:41:00Z",
+      "updated_at": "2026-02-25T08:47:00Z"
+    },
+    {
+      "id": 5009,
+      "user_id": 201,
+      "product_id": 1,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-25T08:14:00Z",
+      "purchased_at": "2026-02-25T08:20:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:14:00Z",
+      "updated_at": "2026-02-25T08:20:00Z"
+    },
+    {
+      "id": 5010,
+      "user_id": 202,
+      "product_id": 3,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-25T08:24:00Z",
+      "purchased_at": "2026-02-25T08:30:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-25T08:24:00Z",
+      "updated_at": "2026-02-25T08:30:00Z"
+    },
+    {
+      "id": 5011,
+      "user_id": 101,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:05:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:05:00Z",
+      "updated_at": "2026-02-26T09:20:00Z"
+    },
+    {
+      "id": 5012,
+      "user_id": 102,
+      "product_id": 3,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:07:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:07:00Z",
+      "updated_at": "2026-02-26T09:24:00Z"
+    },
+    {
+      "id": 5013,
+      "user_id": 103,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:11:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:11:00Z",
+      "updated_at": "2026-02-26T09:27:00Z"
+    },
+    {
+      "id": 5014,
+      "user_id": 104,
+      "product_id": 2,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:13:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:13:00Z",
+      "updated_at": "2026-02-26T09:30:00Z"
+    },
+    {
+      "id": 5015,
+      "user_id": 105,
+      "product_id": 2,
+      "shipping_partner_id": "ship_fastlane",
+      "shipping_partner_name": "Fastlane Express",
+      "added_to_cart_at": "2026-02-26T09:15:00Z",
+      "purchased_at": "2026-02-26T09:23:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:15:00Z",
+      "updated_at": "2026-02-26T09:23:00Z"
+    },
+    {
+      "id": 5016,
+      "user_id": 106,
+      "product_id": 3,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:18:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:18:00Z",
+      "updated_at": "2026-02-26T09:35:00Z"
+    },
+    {
+      "id": 5017,
+      "user_id": 101,
+      "product_id": 2,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:22:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:22:00Z",
+      "updated_at": "2026-02-26T09:38:00Z"
+    },
+    {
+      "id": 5018,
+      "user_id": 102,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:27:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:27:00Z",
+      "updated_at": "2026-02-26T09:44:00Z"
+    },
+    {
+      "id": 5019,
+      "user_id": 103,
+      "product_id": 3,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:32:00Z",
+      "purchased_at": null,
+      "returned_at": null,
+      "created_at": "2026-02-26T09:32:00Z",
+      "updated_at": "2026-02-26T09:48:00Z"
+    },
+    {
+      "id": 5020,
+      "user_id": 104,
+      "product_id": 1,
+      "shipping_partner_id": "ship_uk_mail",
+      "shipping_partner_name": "UK Postal Service",
+      "added_to_cart_at": "2026-02-26T09:36:00Z",
+      "purchased_at": "2026-02-26T09:44:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:36:00Z",
+      "updated_at": "2026-02-26T09:44:00Z"
+    },
+    {
+      "id": 5021,
+      "user_id": 201,
+      "product_id": 1,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-26T09:04:00Z",
+      "purchased_at": "2026-02-26T09:09:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:04:00Z",
+      "updated_at": "2026-02-26T09:09:00Z"
+    },
+    {
+      "id": 5022,
+      "user_id": 202,
+      "product_id": 3,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-26T09:12:00Z",
+      "purchased_at": "2026-02-26T09:19:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:12:00Z",
+      "updated_at": "2026-02-26T09:19:00Z"
+    },
+    {
+      "id": 5023,
+      "user_id": 203,
+      "product_id": 2,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-26T09:18:00Z",
+      "purchased_at": "2026-02-26T09:25:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:18:00Z",
+      "updated_at": "2026-02-26T09:25:00Z"
+    },
+    {
+      "id": 5024,
+      "user_id": 204,
+      "product_id": 1,
+      "shipping_partner_id": "ship_us_ground",
+      "shipping_partner_name": "US Ground Network",
+      "added_to_cart_at": "2026-02-26T09:29:00Z",
+      "purchased_at": "2026-02-26T09:37:00Z",
+      "returned_at": null,
+      "created_at": "2026-02-26T09:29:00Z",
+      "updated_at": "2026-02-26T09:37:00Z"
+    }
+  ]
+}
