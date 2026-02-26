@@ -33,18 +33,18 @@ export default function App() {
     <div
       className="flex flex-col h-full"
       style={{
-        background: 'radial-gradient(ellipse 100% 55% at 50% -5%, rgba(99,102,241,0.18) 0%, #060610 60%)',
+        background: 'radial-gradient(ellipse 90% 50% at 50% -8%, rgba(20,184,166,0.13) 0%, #070a09 58%)',
       }}
     >
       <Header apiStatus={apiStatus} onGuide={() => setGuideOpen(true)} />
 
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Left — context sidebar */}
-        <div className="w-72 flex-shrink-0 overflow-y-auto border-r border-white/[0.05] p-4 flex flex-col gap-3">
+        {/* Context sidebar */}
+        <aside className="w-[268px] flex-shrink-0 overflow-y-auto border-r border-white/[0.05]">
           <MetricPanel />
-        </div>
+        </aside>
 
-        {/* Right — investigation canvas */}
+        {/* Investigation canvas */}
         <div className="flex-1 min-w-0 relative overflow-hidden dot-bg">
           <InvestigatePanel />
         </div>
