@@ -1,0 +1,110 @@
+[
+  {
+    "id": "msg-001",
+    "source": "slack",
+    "channel": "#eng-checkout",
+    "user": "mia.engineering",
+    "timestamp": "2026-02-26T13:42:00Z",
+    "text": "Seeing elevated 500s on UK checkout after the payments release. Rolling logs now.",
+    "tags": ["checkout", "uk", "incident", "sev2", "payments"]
+  },
+  {
+    "id": "msg-002",
+    "source": "slack",
+    "channel": "#eng-checkout",
+    "user": "noah.platform",
+    "timestamp": "2026-02-26T14:05:00Z",
+    "text": "Confirmed regression: retry handler loops for GBP cards. Hotfix PR in progress.",
+    "tags": ["checkout", "uk", "bug", "payments", "gbp"]
+  },
+  {
+    "id": "msg-003",
+    "source": "slack",
+    "channel": "#ops-logistics",
+    "user": "ava.ops",
+    "timestamp": "2026-02-26T14:18:00Z",
+    "text": "Carrier NORTHSTAR marked delayed pickup across London and Manchester routes.",
+    "tags": ["shipping", "uk", "carrier", "delay"]
+  },
+  {
+    "id": "msg-004",
+    "source": "slack",
+    "channel": "#support-escalations",
+    "user": "liam.support",
+    "timestamp": "2026-02-26T14:23:00Z",
+    "text": "Ticket volume +38% in UK. Top complaint: checkout payment failed then cart expired.",
+    "tags": ["support", "uk", "checkout", "tickets", "payment-failure"]
+  },
+  {
+    "id": "msg-005",
+    "source": "slack",
+    "channel": "#finance-ops",
+    "user": "olivia.finance",
+    "timestamp": "2026-02-26T15:02:00Z",
+    "text": "Regional MRR softness mostly UK and IE starting around 14:00 UTC.",
+    "tags": ["mrr", "uk", "ie", "variance"]
+  },
+  {
+    "id": "msg-006",
+    "source": "slack",
+    "channel": "#release-train",
+    "user": "ethan.release",
+    "timestamp": "2026-02-26T13:17:00Z",
+    "text": "Release 2026.02.26-payments shipped with new fallback gateway strategy.",
+    "tags": ["release", "payments", "gateway"]
+  },
+  {
+    "id": "msg-007",
+    "source": "slack",
+    "channel": "#eng-checkout",
+    "user": "sophia.engineering",
+    "timestamp": "2026-02-26T15:31:00Z",
+    "text": "Patch deployed to UK region. Error rate dropped from 3.9% to 1.1%.",
+    "tags": ["checkout", "uk", "mitigation", "incident"]
+  },
+  {
+    "id": "msg-008",
+    "source": "slack",
+    "channel": "#support-escalations",
+    "user": "lucas.support",
+    "timestamp": "2026-02-26T16:10:00Z",
+    "text": "Customers in APAC asking about delayed shipments too, but payment flow looks normal there.",
+    "tags": ["support", "apac", "shipping"]
+  },
+  {
+    "id": "msg-009",
+    "source": "slack",
+    "channel": "#eng-platform",
+    "user": "amelia.sre",
+    "timestamp": "2026-02-26T14:11:00Z",
+    "text": "No DB saturation observed. Checkout failure likely app-level, not infra capacity.",
+    "tags": ["infra", "checkout", "incident"]
+  },
+  {
+    "id": "msg-010",
+    "source": "slack",
+    "channel": "#finance-ops",
+    "user": "harper.analytics",
+    "timestamp": "2026-02-26T16:22:00Z",
+    "text": "Conversion drop concentrated in UK browser sessions on mobile web checkout.",
+    "tags": ["conversion", "uk", "mobile", "checkout"]
+  },
+  {
+    "id": "msg-011",
+    "source": "jira",
+    "channel": "ENG",
+    "user": "eng-bot",
+    "timestamp": "2026-02-26T14:07:00Z",
+    "text": "ENG-2381 created: GBP card retry handler loops and double-auths in checkout.",
+    "tags": ["jira", "bug", "checkout", "uk", "payments"]
+  },
+  {
+    "id": "msg-012",
+    "source": "jira",
+    "channel": "OPS",
+    "user": "ops-bot",
+    "timestamp": "2026-02-26T14:29:00Z",
+    "text": "OPS-912 opened: Carrier NORTHSTAR delay in UK depots; SLA risk elevated.",
+    "tags": ["jira", "shipping", "uk", "carrier"]
+  }
+]

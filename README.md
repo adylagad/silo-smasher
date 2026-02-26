@@ -69,6 +69,7 @@ silo-smasher/
 │   ├── web_navigation/         # Yutori browser automation client
 │   └── cli/                   # CLI entry points
 ├── data/system_of_record/      # Local artefacts (raw snapshots, context JSON, manifest)
+├── data/internal_signals/       # Synthetic Slack/Jira-style internal messages
 ├── examples/
 │   └── synthetic_raw_bundle.json
 ├── Dockerfile
@@ -118,6 +119,13 @@ sync-graph-context
 sqlite3 data/system_of_record/sqlite/commerce.db \
   "SELECT status, COUNT(*) AS count FROM purchases GROUP BY status ORDER BY count DESC;"
 ```
+
+### 2c. Validate internal unstructured signals (optional)
+
+The easiest internal-signal path is already wired with synthetic messages in:
+`data/internal_signals/slack_messages.json`
+
+The orchestrator can search this through `search_internal_communications` with no API key.
 
 ### 3. Run a diagnostic investigation
 
@@ -193,5 +201,6 @@ Push to GitHub, connect repo in [render.com](https://render.com). `render.yaml` 
 | **Tavily** | External news search — real-world economic signals | `market_signals/` |
 | **Modulate** | Voice interface — intent/emotion → summary vs deep-dive | `voice_interface/` |
 | **Senso** | System-of-record — verified ground-truth context | `senso/` |
+| **Internal Signals (Local)** | Synthetic Slack/Jira unstructured context for cross-silo correlation | `internal_signals/`, `data/internal_signals/slack_messages.json` |
 | **AWS** | Bedrock embeddings + S3 memory + Step Functions pipeline | `graph/`, `memory/`, `aws/` |
 | **Render** | API hosting | `Dockerfile`, `render.yaml` |

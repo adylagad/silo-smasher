@@ -8,6 +8,7 @@ from typing import Any, Callable
 from silo_smasher.finance import RevenueVarianceClient
 from silo_smasher.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
 from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
+from silo_smasher.internal_signals import InternalSignalSearch
 from silo_smasher.market_signals import ExternalNewsSearchClient
 from silo_smasher.mock_data import mock_data_enabled, mock_senso_content
 from silo_smasher.senso.client import SensoClient, SensoConfig
@@ -40,6 +41,7 @@ class DiagnosticToolRuntime:
         self._revenue_variance_client: RevenueVarianceClient | None = None
         self._external_news_client: ExternalNewsSearchClient | None = None
         self._voice_command_analyzer: VoiceCommandAnalyzer | None = None
+        self._internal_signal_search: InternalSignalSearch | None = None
         self._structured_query_store: StructuredQueryStore | None = None
         self._structured_query_settings = StructuredQuerySettings.from_env()
         self._sql_bootstrap_state: dict[str, Any] | None = None
@@ -185,6 +187,28 @@ class DiagnosticToolRuntime:
                 },
                 handler=self._search_external_economic_news,
             ),
+            "search_internal_communications": ToolSpec(
+                name="search_internal_communications",
+                description=(
+                    "Search synthetic internal Slack/Jira-style messages for engineering incidents, "
+                    "deployment notes, and support escalations relevant to the hypothesis."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "channels": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "hours_back": {"type": "integer", "minimum": 1, "maximum": 720},
+                        "max_results": {"type": "integer", "minimum": 1, "maximum": 20},
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+                handler=self._search_internal_communications,
+            ),
             "analyze_voice_command_mode": ToolSpec(
                 name="analyze_voice_command_mode",
                 description=(
@@ -280,6 +304,12 @@ class DiagnosticToolRuntime:
             return self._voice_command_analyzer
         self._voice_command_analyzer = VoiceCommandAnalyzer.from_env()
         return self._voice_command_analyzer
+
+    def _ensure_internal_signal_search(self) -> InternalSignalSearch:
+        if self._internal_signal_search:
+            return self._internal_signal_search
+        self._internal_signal_search = InternalSignalSearch.from_env()
+        return self._internal_signal_search
 
     def _ensure_structured_query_store(self) -> StructuredQueryStore:
         if self._structured_query_store:
@@ -465,6 +495,40 @@ class DiagnosticToolRuntime:
         return client.search_economic_news(
             country=country,
             query=query,
+            hours_back=hours_back,
+            max_results=max_results,
+        )
+
+    def _search_internal_communications(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        query = str(arguments.get("query", "")).strip()
+        if not query:
+            return {"error": "query is required"}
+
+        channels_raw = arguments.get("channels")
+        channels: list[str] | None = None
+        if isinstance(channels_raw, list):
+            channels = [str(value) for value in channels_raw if str(value).strip()]
+
+        hours_back_raw = arguments.get("hours_back")
+        hours_back: int | None = None
+        if hours_back_raw is not None:
+            try:
+                hours_back = int(hours_back_raw)
+            except (TypeError, ValueError):
+                return {"error": "hours_back must be an integer when provided."}
+
+        max_results_raw = arguments.get("max_results")
+        max_results: int | None = None
+        if max_results_raw is not None:
+            try:
+                max_results = int(max_results_raw)
+            except (TypeError, ValueError):
+                return {"error": "max_results must be an integer when provided."}
+
+        searcher = self._ensure_internal_signal_search()
+        return searcher.search(
+            query=query,
+            channels=channels,
             hours_back=hours_back,
             max_results=max_results,
         )
