@@ -5,6 +5,7 @@ Pipeline for three jobs:
 1. Create/reuse a synthetic Airbyte source and run syncs.
 2. Normalize raw records into deterministic `agent_ready_context` JSON (System of Record).
 3. Load entities into Neo4j AuraDB and run GraphRAG with AWS Bedrock embeddings.
+4. Run an OpenAI orchestrator agent with tool access to GraphRAG and Senso context.
 
 ## Project Layout
 
@@ -25,12 +26,17 @@ airbyte-synthetic-data-pipeline/
       bedrock_embedder.py
       store.py
       graphrag.py
+    orchestrator/
+      config.py
+      tools.py
+      agent.py
     pipeline/
       ground_truth.py
     cli/
       build_agent_context.py
       sync_graph_context.py
       query_graph_rag.py
+      run_diagnostic_orchestrator.py
     synthetic_sync.py
 ```
 
@@ -82,6 +88,7 @@ This command:
   - `(:Customer)-[:PLACED]->(:Order)-[:CONTAINS_PRODUCT]->(:Product)`
   - `(:Customer)-[:OPENED_TICKET]->(:SupportTicket)-[:ABOUT_ORDER]->(:Order)`
 - generates embeddings via AWS Bedrock and stores them on `:Retrievable` nodes
+- auto-falls back from `neo4j+s://` to `neo4j+ssc://` if Aura routing handshake fails in your local runtime
 
 ## GraphRAG: Query Why Data Is Connected
 
@@ -117,6 +124,41 @@ Output includes:
 7. Run `sync-graph-context`.
 8. Run `query-graph-rag` and confirm you see `why_connected_paths` and `customer_order_ticket_links`.
 
+## OpenAI Orchestrator (GPT + Tools)
+
+```bash
+cd /Users/aditya/repos/hacks/airbyte-synthetic-data-pipeline
+source .venv/bin/activate
+run-diagnostic-orchestrator \
+  --question "Sales are down 12% week-over-week. Generate hypotheses and test with tools."
+```
+
+The orchestrator uses function tools:
+
+- `query_graph_connections`: runs GraphRAG on Neo4j + Bedrock
+- `get_senso_content`: fetches verified context by Senso content id
+- `get_latest_system_record_entries`: reads local manifest/context previews for grounding
+
+Expected final output is structured JSON with:
+
+- metric summary
+- tested hypotheses
+- confidence scores
+- likely root cause
+- suggested next queries
+
+## OpenAI Setup (Step by Step)
+
+1. Create an OpenAI API key.
+2. Put this in `.env`: `OPENAI_API_KEY=...`
+3. Optional model override:
+   - `OPENAI_MODEL=gpt-4o` (default)
+   - swap to your preferred newer model when available.
+4. Optional tool-call loop cap:
+   - `OPENAI_MAX_TOOL_ROUNDS=8`
+5. Ensure GraphRAG and Senso credentials are also configured if you want those tools active.
+6. Run `run-diagnostic-orchestrator`.
+
 ## Optional Senso Publish
 
 ```bash
@@ -134,4 +176,4 @@ build-agent-context \
 - Airbyte: `AIRBYTE_SERVER_URL`, `AIRBYTE_BEARER_TOKEN` or `AIRBYTE_USERNAME` + `AIRBYTE_PASSWORD`, `AIRBYTE_WORKSPACE_ID`, `AIRBYTE_SOURCE_DEFINITION_ID`, `AIRBYTE_DESTINATION_ID`
 - Senso: `SENSO_API_KEY`, `SENSO_BASE_URL`, `SENSO_POLL_SECONDS`, `SENSO_TIMEOUT_SECONDS`
 - Neo4j/AWS: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`, `NEO4J_VECTOR_INDEX`, `AWS_REGION`, `BEDROCK_EMBEDDING_MODEL_ID`
-
+- OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOOL_ROUNDS`
