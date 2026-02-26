@@ -26,6 +26,8 @@ airbyte-synthetic-data-pipeline/
       bedrock_embedder.py
       store.py
       graphrag.py
+    guardrails/
+      fastino.py
     orchestrator/
       config.py
       tools.py
@@ -137,6 +139,8 @@ Default behavior:
 
 - OpenAI is the primary provider
 - Gemini is an automatic backup if OpenAI fails (for example quota/rate limits)
+- Fastino guardrails redact sensitive values before provider calls
+- Fastino guardrails check each tool action and block high-risk operations
 
 The orchestrator uses function tools:
 
@@ -166,8 +170,16 @@ Expected final output is structured JSON with:
    - `GEMINI_MODEL=gemini-2.5-flash` (fallback default)
 7. Optional tool-call loop cap:
    - `OPENAI_MAX_TOOL_ROUNDS=8`
-8. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
-9. Run `run-diagnostic-orchestrator`.
+8. Create a Fastino API key and add:
+   - `FASTINO_API_KEY=...`
+9. Keep Fastino guardrails defaults (or tune):
+   - `FASTINO_GUARDRAILS_ENABLED=true`
+   - `FASTINO_BASE_URL=https://api.fastino.ai`
+   - `FASTINO_PII_THRESHOLD=0.35`
+   - `FASTINO_ACTION_THRESHOLD=0.5`
+   - `FASTINO_FAIL_MODE=open`
+10. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
+11. Run `run-diagnostic-orchestrator`.
 
 ## Optional Senso Publish
 
@@ -187,3 +199,4 @@ build-agent-context \
 - Senso: `SENSO_API_KEY`, `SENSO_BASE_URL`, `SENSO_POLL_SECONDS`, `SENSO_TIMEOUT_SECONDS`
 - Neo4j/AWS: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`, `NEO4J_VECTOR_INDEX`, `AWS_REGION`, `BEDROCK_EMBEDDING_MODEL_ID`
 - Orchestrator/LLM: `ORCHESTRATOR_PRIMARY_PROVIDER`, `ORCHESTRATOR_ENABLE_GEMINI_FALLBACK`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOOL_ROUNDS`, `GEMINI_API_KEY`, `GEMINI_MODEL`
+- Fastino Guardrails: `FASTINO_API_KEY`, `FASTINO_BASE_URL`, `FASTINO_GUARDRAILS_ENABLED`, `FASTINO_PII_THRESHOLD`, `FASTINO_ACTION_THRESHOLD`, `FASTINO_TIMEOUT_SECONDS`, `FASTINO_FAIL_MODE`

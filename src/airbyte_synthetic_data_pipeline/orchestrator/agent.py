@@ -6,6 +6,8 @@ from typing import Any
 
 from openai import OpenAI, OpenAIError
 
+from airbyte_synthetic_data_pipeline.guardrails import FastinoSafetyEngine
+
 from .config import OrchestratorSettings
 from .tools import DiagnosticToolRuntime
 
@@ -42,25 +44,40 @@ class DiagnosticOrchestrator:
     def __init__(self, settings: OrchestratorSettings):
         self._settings = settings
         self._openai_client = OpenAI()
+        self._safety_engine = FastinoSafetyEngine.from_env()
 
     def run(self, question: str, extra_context: str | None = None) -> dict[str, Any]:
         runtime = DiagnosticToolRuntime()
+        safety_report: dict[str, Any] = {"input_redaction": None, "tool_checks": []}
         try:
             prompt = question.strip()
             if extra_context:
                 prompt = f"{prompt}\n\nContext:\n{extra_context.strip()}"
 
+            redaction = self._safety_engine.redact_sensitive_text(prompt)
+            prompt = redaction.sanitized_text
+            safety_report["input_redaction"] = redaction.to_dict()
+
             attempts: list[dict[str, Any]] = []
             for provider in self._provider_order():
                 if provider == "openai":
-                    payload, error = self._run_with_openai(prompt, runtime)
+                    payload, error = self._run_with_openai(
+                        prompt=prompt,
+                        runtime=runtime,
+                        safety_report=safety_report,
+                    )
                 elif provider == "gemini":
-                    payload, error = self._run_with_gemini(prompt, runtime)
+                    payload, error = self._run_with_gemini(
+                        prompt=prompt,
+                        runtime=runtime,
+                        safety_report=safety_report,
+                    )
                 else:
                     payload, error = None, {"error": "unknown_provider", "provider": provider}
 
                 if error is None and payload is not None:
                     payload["_provider"] = provider
+                    payload["_safety"] = safety_report
                     return payload
 
                 attempts.append(
@@ -73,6 +90,7 @@ class DiagnosticOrchestrator:
             return {
                 "error": "all_providers_failed",
                 "attempts": attempts,
+                "_safety": safety_report,
             }
         finally:
             runtime.close()
@@ -91,7 +109,10 @@ class DiagnosticOrchestrator:
         return order
 
     def _run_with_openai(
-        self, prompt: str, runtime: DiagnosticToolRuntime
+        self,
+        prompt: str,
+        runtime: DiagnosticToolRuntime,
+        safety_report: dict[str, Any],
     ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         try:
             response = self._openai_client.responses.create(
@@ -125,7 +146,14 @@ class DiagnosticOrchestrator:
                 except (json.JSONDecodeError, TypeError):
                     arguments = {}
 
-                tool_result = runtime.call(call.name, arguments)
+                tool_result = self._run_tool_with_guardrails(
+                    runtime=runtime,
+                    tool_name=call.name,
+                    arguments=arguments,
+                    provider="openai",
+                    safety_report=safety_report,
+                    call_id=call.call_id,
+                )
                 tool_outputs.append(
                     {
                         "type": "function_call_output",
@@ -151,7 +179,10 @@ class DiagnosticOrchestrator:
         }
 
     def _run_with_gemini(
-        self, prompt: str, runtime: DiagnosticToolRuntime
+        self,
+        prompt: str,
+        runtime: DiagnosticToolRuntime,
+        safety_report: dict[str, Any],
     ) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
         try:
             from google import genai
@@ -206,7 +237,13 @@ class DiagnosticOrchestrator:
                     model_parts.append(
                         types.Part.from_function_call(name=call_name, args=call_args)
                     )
-                    tool_result = runtime.call(call_name, call_args)
+                    tool_result = self._run_tool_with_guardrails(
+                        runtime=runtime,
+                        tool_name=call_name,
+                        arguments=call_args,
+                        provider="gemini",
+                        safety_report=safety_report,
+                    )
                     user_response_parts.append(
                         types.Part.from_function_response(
                             name=call_name,
@@ -280,3 +317,34 @@ class DiagnosticOrchestrator:
             "error_type": exc.__class__.__name__,
             "detail": str(exc),
         }
+
+    def _run_tool_with_guardrails(
+        self,
+        runtime: DiagnosticToolRuntime,
+        tool_name: str,
+        arguments: dict[str, Any],
+        provider: str,
+        safety_report: dict[str, Any],
+        call_id: str | None = None,
+    ) -> dict[str, Any]:
+        action_payload = {
+            "tool_name": tool_name,
+            "arguments": arguments,
+        }
+        action_text = json.dumps(action_payload, sort_keys=True, ensure_ascii=True)
+        decision = self._safety_engine.evaluate_action(action_text)
+        check_record = decision.to_dict()
+        check_record["provider"] = provider
+        check_record["tool_name"] = tool_name
+        check_record["call_id"] = call_id
+        safety_report["tool_checks"].append(check_record)
+
+        if not decision.allowed:
+            return {
+                "error": "blocked_by_guardrails",
+                "tool_name": tool_name,
+                "reason": decision.reason,
+                "category": decision.category,
+            }
+
+        return runtime.call(tool_name, arguments)
