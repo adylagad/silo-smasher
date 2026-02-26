@@ -71,11 +71,17 @@ def create_s3_bucket(s3, bucket_name: str) -> str:
                 CreateBucketConfiguration={"LocationConstraint": REGION},
             )
         log("created")
-    except s3.exceptions.BucketAlreadyOwnedByYou:
-        log("already exists — skipping")
-    except s3.exceptions.BucketAlreadyExists:
-        log("name taken globally — choose a different name and re-run")
-        raise
+    except (s3.exceptions.BucketAlreadyOwnedByYou,
+            s3.exceptions.from_code("BucketAlreadyOwnedByYou").__class__):
+        log("already exists (owned by you) — skipping")
+    except Exception as exc:
+        if "BucketAlreadyOwnedByYou" in str(exc):
+            log("already exists (owned by you) — skipping")
+        elif "BucketAlreadyExists" in str(exc):
+            log("name taken globally — choose a different name and re-run")
+            raise
+        else:
+            raise
     # Block public access
     s3.put_public_access_block(
         Bucket=bucket_name,
@@ -366,8 +372,31 @@ def main() -> None:
     lambda_role_arn = ensure_lambda_role(iam, bucket_name)
 
     # 3. Build zip & collect env vars to pass to Lambda
+    # Lambda keys must match [a-zA-Z][a-zA-Z0-9_]+ and values must be strings.
+    import re as _re
+    _valid_key = _re.compile(r'^[a-zA-Z][a-zA-Z0-9_]+$')
+    _app_prefixes = (
+        "OPENAI_", "GEMINI_", "NEO4J_", "BEDROCK_",
+        "SENSO_", "FASTINO_", "YUTORI_", "NUMERIC_", "TAVILY_",
+        "MODULATE_", "AIRBYTE_", "ORCHESTRATOR_",
+        "AWS_S3_", "AWS_STEP_",  # only our custom AWS_ vars, not the reserved ones
+    )
+    # Lambda reserves AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, etc.
+    _lambda_reserved = {
+        "AWS_REGION", "AWS_DEFAULT_REGION", "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN",
+        "AWS_EXECUTION_ENV", "AWS_LAMBDA_FUNCTION_NAME", "AWS_LAMBDA_FUNCTION_MEMORY_SIZE",
+        "AWS_LAMBDA_FUNCTION_VERSION", "AWS_LAMBDA_LOG_GROUP_NAME",
+        "AWS_LAMBDA_LOG_STREAM_NAME", "AWS_LAMBDA_RUNTIME_API",
+    }
     zip_bytes = build_lambda_zip()
-    env_vars = {k: v for k, v in os.environ.items() if k not in {"PATH", "PWD", "SHELL"}}
+    env_vars = {
+        k: str(v)
+        for k, v in os.environ.items()
+        if _valid_key.match(k)
+        and k not in _lambda_reserved
+        and (k.startswith(_app_prefixes) or k in {"PORT", "LAMBDA_TMP_ROOT"})
+    }
 
     # 4. Deploy Lambda functions
     lambda_arns = deploy_lambda(lam, lambda_role_arn, zip_bytes, env_vars)
