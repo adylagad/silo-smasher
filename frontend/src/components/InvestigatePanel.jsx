@@ -136,7 +136,7 @@ const ThinkingOrb = ({ currentStep }) => (
       >…</motion.span>
     </div>
     <p className="text-xs text-zinc-600 text-center max-w-xs leading-relaxed">
-      Cross-referencing your data warehouse, knowledge graph, and live market signals.
+      Checking SQL, graph, and market signals.
     </p>
   </div>
 )
@@ -368,7 +368,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                 <Activity size={13} className="text-sky-300" />
               </div>
               <span className="text-[10px] font-semibold text-sky-300/70 tracking-widest uppercase">
-                Autonomous Root-Cause Analysis
+                Diagnostic Agent
               </span>
             </motion.div>
 
@@ -379,7 +379,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12 }}
             >
-              What happened to your metrics?
+              What changed?
             </motion.h1>
             <motion.p
               className="text-[13px] text-zinc-500 text-center mb-9 max-w-[420px] leading-relaxed"
@@ -387,8 +387,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.16 }}
             >
-              Describe any revenue drop, churn spike, or conversion miss.
-              Get a cross-silo brief powered by AI, graph traversal, and live market signals.
+              Type your question. Get a short answer with evidence.
             </motion.p>
 
             {/* Command input */}
@@ -412,7 +411,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                         runQuery()
                       }
                     }}
-                    placeholder="MRR is down 15% this week. Why did this happen?"
+                    placeholder="MRR is down 15% this week. Why?"
                     className="flex-1 bg-transparent resize-none text-sm text-zinc-200 placeholder:text-zinc-600/60 focus:outline-none leading-relaxed"
                     autoFocus
                   />
@@ -510,7 +509,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                       animate={{ opacity: 1, y: 0 }}
                     >
                       <p className="text-xs text-amber-200/85">
-                        Provider APIs were unavailable, so this response uses resilient fallback mode.
+                        Provider unavailable. Showing fallback results.
                       </p>
                     </motion.div>
                   )}
@@ -582,7 +581,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                       <div className="flex items-center gap-2 mb-4">
                         <div className="w-1 h-4 rounded-full bg-emerald-400" />
                         <span className="text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">
-                          Recommended Actions
+                          Next Steps
                         </span>
                       </div>
                       <ol className="flex flex-col gap-3">

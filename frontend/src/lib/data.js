@@ -71,20 +71,20 @@ export const STATS = [
 ]
 
 export const STEPS = [
-  { label: 'Generating hypotheses',     short: 'Hypotheses', tool: 'OpenAI GPT-4o'  },
-  { label: 'Querying knowledge graph',  short: 'Graph',      tool: 'Neo4j GraphRAG' },
-  { label: 'Finance variance analysis', short: 'Finance',    tool: 'Numeric'        },
-  { label: 'External economic signals', short: 'Signals',    tool: 'Tavily Search'  },
-  { label: 'Scoring & composing brief', short: 'Scoring',    tool: 'Fastino Safety' },
+  { label: 'Testing hypotheses', short: 'Hypothesis', tool: 'OpenAI' },
+  { label: 'Checking graph links', short: 'Graph', tool: 'Neo4j' },
+  { label: 'Checking finance signal', short: 'Finance', tool: 'Numeric' },
+  { label: 'Checking external events', short: 'External', tool: 'Tavily' },
+  { label: 'Scoring and summary', short: 'Summary', tool: 'Fastino' },
 ]
 
 export const STEP_DURATIONS = [900, 1100, 1000, 900, 750]
 
 export const PRESETS = [
-  'MRR is down 15% this week. Why?',
-  'Sales dropped 20% in the UK. What is the root cause?',
-  'Why did our Q3 revenue miss forecast by 12%?',
-  'Customer churn spiked to 8% last month. What caused it?',
+  'MRR down 15% this week. Why?',
+  'UK sales down 20%. Root cause?',
+  'Q3 revenue missed by 12%. Why?',
+  'Churn jumped to 8%. What changed?',
 ]
 
 export const STATUS_META = {

@@ -22,7 +22,7 @@ export default function Header({ apiStatus, onGuide }) {
             </div>
             <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
               <Sparkles size={11} className="text-cyan-300" />
-              Autonomous diagnostic explorer
+              Find why metrics changed
             </div>
           </div>
         </div>

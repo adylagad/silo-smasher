@@ -4,28 +4,28 @@ import { X, Database, Share2, Globe, ShieldCheck, Activity } from 'lucide-react'
 const STEPS = [
   {
     icon: Activity,
-    title: 'Describe the anomaly',
-    body: 'Start with plain language: revenue dip, churn spike, or conversion miss. The system turns this into a structured diagnostic objective.',
+    title: 'Describe the issue',
+    body: 'Type the metric change in plain language.',
   },
   {
     icon: Database,
-    title: 'Generate hypotheses',
-    body: 'The orchestrator drafts likely explanations and prioritizes them by causal plausibility before any heavy querying starts.',
+    title: 'Generate ideas',
+    body: 'The agent drafts likely causes.',
   },
   {
     icon: Share2,
-    title: 'Traverse relationships',
-    body: 'Graph traversal links customers, orders, tickets, and regions to expose which entities are truly connected to the metric movement.',
+    title: 'Check connections',
+    body: 'Graph links show what is connected.',
   },
   {
     icon: Globe,
-    title: 'Cross-check outside signals',
-    body: 'External context is pulled in for weather, macroeconomics, market news, and competitive movement that may explain local variance.',
+    title: 'Check outside events',
+    body: 'News and market signals are compared.',
   },
   {
     icon: ShieldCheck,
-    title: 'Score and summarize',
-    body: 'Guardrails filter weak claims. You get a concise confidence-scored brief and recommended next actions.',
+    title: 'Summarize',
+    body: 'You get a short answer with confidence.',
   },
 ]
 
@@ -53,8 +53,8 @@ export default function GuideModal({ open, onClose }) {
 
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300/20 flex-shrink-0">
               <div>
-                <h2 className="text-sm font-extrabold text-white">How The Diagnostic Loop Works</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">Five automated stages from signal to explanation</p>
+                <h2 className="text-sm font-extrabold text-white">How it works</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">5 quick steps</p>
               </div>
               <button
                 onClick={onClose}
@@ -102,14 +102,14 @@ export default function GuideModal({ open, onClose }) {
               <div className="rounded-xl bg-sky-400/10 border border-sky-300/20 p-3">
                 <p className="text-[11px] text-slate-300 leading-relaxed">
                   <span className="font-bold text-sky-200">Tip:</span>{' '}
-                  Use the chart filters first, then open chat to investigate the exact interval where the anomaly starts.
+                  Scan charts first, then open chat.
                 </p>
               </div>
               <button
                 onClick={onClose}
                 className="w-full h-9 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 text-xs font-extrabold transition-opacity hover:opacity-95"
               >
-                Start Investigation
+                Start
               </button>
             </div>
           </motion.div>

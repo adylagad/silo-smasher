@@ -70,7 +70,7 @@ export default function App() {
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
                     <MessageSquare size={12} className="text-cyan-300" />
-                    Analyst Chat
+                    Chat
                   </span>
                   <button
                     type="button"
@@ -87,7 +87,7 @@ export default function App() {
                   <input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask why revenue changed this week..."
+                    placeholder="Ask: why did revenue drop?"
                     className="flex-1 h-10 rounded-xl border border-slate-400/25 bg-[#0a1625]/85 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-300/50"
                   />
                   <button
@@ -116,7 +116,7 @@ export default function App() {
               <div className="h-12 px-4 border-b border-slate-400/20 bg-slate-900/40 flex items-center justify-between">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
                   <Expand size={12} className="text-sky-300" />
-                  Expanded Diagnostic Chat
+                  Diagnostic Chat
                 </span>
                 <button
                   onClick={() => {

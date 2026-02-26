@@ -107,12 +107,12 @@ export default function ChartsFocusPanel() {
           className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
         >
           <div>
-            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Realtime Diagnostic Cockpit</div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Metrics Dashboard</div>
             <h2 className="text-[2rem] md:text-[2.35rem] leading-[1.05] tracking-tight text-white font-extrabold mt-1">
-              Metrics first. <span className="gradient-text">Agent chat on demand.</span>
+              Metrics first. <span className="gradient-text">Chat when needed.</span>
             </h2>
             <p className="text-[12px] md:text-[13px] text-slate-400 mt-2 max-w-[620px]">
-              This surface prioritizes trend visibility, anomaly context, and fast executive-read KPIs before entering root-cause conversations.
+              Pick a range, spot changes, then open chat for root cause.
             </p>
           </div>
 
@@ -164,7 +164,7 @@ export default function ChartsFocusPanel() {
                       : option.key === 'tickets'
                       ? Math.abs(delta)
                       : `${Math.abs(delta).toFixed(1)} pts`}{' '}
-                    vs previous week
+                    vs last week
                   </div>
                 )}
               </button>
@@ -181,8 +181,8 @@ export default function ChartsFocusPanel() {
           <CardTitle
             icon={Activity}
             title={`${selectedTrack.label} Trend`}
-            subtitle={`${weeks}-week interactive timeline`}
-            right={<span className="soft-pill px-2.5 py-1 text-[10px] text-slate-300 font-semibold">Live slice: {latest.week}</span>}
+            subtitle={`${weeks}-week trend`}
+            right={<span className="soft-pill px-2.5 py-1 text-[10px] text-slate-300 font-semibold">Latest: {latest.week}</span>}
           />
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={series} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
@@ -221,7 +221,7 @@ export default function ChartsFocusPanel() {
             transition={{ duration: 0.35, delay: 0.14 }}
             className="card panel-hover p-4 md:p-5 xl:col-span-2"
           >
-            <CardTitle icon={BarChart3} title="Operating Signals" subtitle="Conversion, churn, and support load" />
+            <CardTitle icon={BarChart3} title="Operating Signals" subtitle="Conversion, churn, tickets" />
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={series} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
@@ -243,7 +243,7 @@ export default function ChartsFocusPanel() {
             transition={{ duration: 0.35, delay: 0.16 }}
             className="card panel-hover p-4 md:p-5"
           >
-            <CardTitle icon={PieChartIcon} title="Regional Mix" subtitle={`${latest.week} contribution`} />
+            <CardTitle icon={PieChartIcon} title="Regional Mix" subtitle={latest.week} />
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={regionShare} cx="50%" cy="50%" dataKey="value" innerRadius={48} outerRadius={76} paddingAngle={3}>
@@ -275,7 +275,7 @@ export default function ChartsFocusPanel() {
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
           <div className="card panel-hover p-4 md:p-5 lg:col-span-2">
-            <CardTitle icon={Radar} title="Revenue by Region" subtitle="Absolute contribution trend" />
+            <CardTitle icon={Radar} title="Revenue by Region" subtitle="Weekly totals" />
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={series} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
@@ -291,17 +291,17 @@ export default function ChartsFocusPanel() {
           </div>
 
           <div className="card panel-hover p-4 md:p-5 flex flex-col justify-between">
-            <CardTitle icon={Activity} title="Anomaly Note" subtitle="Auto-generated analyst context" />
+            <CardTitle icon={Activity} title="Anomaly Note" subtitle="Quick read" />
             <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 px-3 py-3">
               <div className="text-[11px] uppercase tracking-wider text-rose-200/80 font-bold">Primary signal</div>
               <p className="text-[12px] leading-relaxed text-slate-100 mt-1">
-                Revenue softness correlates with elevated churn and support load, concentrated in EU and US corridors.
+                MRR is down while churn and tickets are up, mostly in EU and US.
               </p>
             </div>
             <div className="rounded-xl border border-sky-300/20 bg-sky-400/10 px-3 py-3 mt-3">
-              <div className="text-[11px] uppercase tracking-wider text-sky-200/90 font-bold">Recommended move</div>
+              <div className="text-[11px] uppercase tracking-wider text-sky-200/90 font-bold">Next move</div>
               <p className="text-[12px] leading-relaxed text-slate-100 mt-1">
-                Open the diagnostic chat to run hypothesis testing against graph context and external market events.
+                Open chat to test likely causes.
               </p>
             </div>
           </div>
