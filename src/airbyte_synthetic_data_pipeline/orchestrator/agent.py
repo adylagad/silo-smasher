@@ -24,6 +24,7 @@ Operating rules:
 5. If graph/system evidence is missing, use web navigation to retrieve the latest internal PDF report.
 6. When revenue declines, use finance variance analysis to classify seasonal dip vs accounting anomaly.
 7. If finance analysis indicates regional decline (for example Japan), search external economic news in the last 24 hours.
+8. In voice-command mode, analyze user emotion/intent and prioritize summary mode when stress is detected.
 
 Final answer JSON schema:
 {

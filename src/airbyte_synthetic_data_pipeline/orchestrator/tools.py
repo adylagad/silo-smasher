@@ -10,6 +10,7 @@ from airbyte_synthetic_data_pipeline.graph import GraphRAGService, GraphSettings
 from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
 from airbyte_synthetic_data_pipeline.market_signals import ExternalNewsSearchClient
 from airbyte_synthetic_data_pipeline.senso.client import SensoClient, SensoConfig
+from airbyte_synthetic_data_pipeline.voice_interface import VoiceCommandAnalyzer
 from airbyte_synthetic_data_pipeline.web_navigation import NavigatorClient
 
 
@@ -32,6 +33,7 @@ class DiagnosticToolRuntime:
         self._navigator_client: NavigatorClient | None = None
         self._revenue_variance_client: RevenueVarianceClient | None = None
         self._external_news_client: ExternalNewsSearchClient | None = None
+        self._voice_command_analyzer: VoiceCommandAnalyzer | None = None
         self._tool_map: dict[str, ToolSpec] = {}
         self._init_tools()
 
@@ -174,6 +176,23 @@ class DiagnosticToolRuntime:
                 },
                 handler=self._search_external_economic_news,
             ),
+            "analyze_voice_command_mode": ToolSpec(
+                name="analyze_voice_command_mode",
+                description=(
+                    "Analyze spoken command transcript and emotion to recommend summary vs "
+                    "deep-dive response mode."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "utterance": {"type": "string"},
+                        "audio_url": {"type": "string"},
+                        "context": {"type": "string"},
+                    },
+                    "additionalProperties": False,
+                },
+                handler=self._analyze_voice_command_mode,
+            ),
         }
 
     def _ensure_graph_service(self) -> GraphRAGService:
@@ -214,6 +233,12 @@ class DiagnosticToolRuntime:
             return self._external_news_client
         self._external_news_client = ExternalNewsSearchClient.from_env()
         return self._external_news_client
+
+    def _ensure_voice_command_analyzer(self) -> VoiceCommandAnalyzer:
+        if self._voice_command_analyzer:
+            return self._voice_command_analyzer
+        self._voice_command_analyzer = VoiceCommandAnalyzer.from_env()
+        return self._voice_command_analyzer
 
     def _query_graph_connections(self, arguments: dict[str, Any]) -> dict[str, Any]:
         question = str(arguments.get("question", "")).strip()
@@ -345,4 +370,16 @@ class DiagnosticToolRuntime:
             query=query,
             hours_back=hours_back,
             max_results=max_results,
+        )
+
+    def _analyze_voice_command_mode(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        utterance = str(arguments.get("utterance", "")).strip()
+        audio_url = str(arguments.get("audio_url", "")).strip() or None
+        context = str(arguments.get("context", "")).strip() or None
+
+        analyzer = self._ensure_voice_command_analyzer()
+        return analyzer.analyze_command(
+            utterance=utterance,
+            audio_url=audio_url,
+            context=context,
         )

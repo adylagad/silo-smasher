@@ -35,6 +35,8 @@ airbyte-synthetic-data-pipeline/
       variance_client.py
     market_signals/
       tavily_client.py
+    voice_interface/
+      modulate_client.py
     web_navigation/
       navigator_client.py
     orchestrator/
@@ -154,6 +156,7 @@ Default behavior:
 - Yutori gracefully falls back to local system-of-record summary when web credentials are unavailable
 - Numeric variance analysis classifies revenue dips as seasonal vs anomaly with CFO-style explanation
 - Tavily external search adds real-world economic context (for example major Japan news in last 24 hours)
+- Modulate voice mode detects intent/emotion and prioritizes summary mode if the speaker sounds stressed
 
 The orchestrator uses function tools:
 
@@ -163,6 +166,7 @@ The orchestrator uses function tools:
 - `fetch_portal_report_with_web_navigation`: logs into internal portal and extracts latest PDF report evidence
 - `analyze_revenue_variance`: asks finance variance analysis if revenue dip is seasonal or anomalous
 - `search_external_economic_news`: checks outside-world economic news for a specific country/region
+- `analyze_voice_command_mode`: detects voice intent/emotion and recommends summary vs deep-dive mode
 
 Expected final output is structured JSON with:
 
@@ -220,8 +224,16 @@ Expected final output is structured JSON with:
    - `TAVILY_SEARCH_DEPTH=basic`
    - `TAVILY_INCLUDE_ANSWER=basic`
    - `TAVILY_FALLBACK_ENABLED=true`
-16. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
-17. Run `run-diagnostic-orchestrator`.
+16. Create a Modulate API key and add:
+   - `MODULATE_API_KEY=...`
+17. Keep Modulate defaults (or tune):
+   - `MODULATE_BASE_URL=https://api.modulate.ai`
+   - `MODULATE_ANALYZE_PATH=/v1/velma/analyze`
+   - `MODULATE_TIMEOUT_SECONDS=20`
+   - `MODULATE_STRESS_THRESHOLD=0.6`
+   - `MODULATE_FALLBACK_ENABLED=true`
+18. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
+19. Run `run-diagnostic-orchestrator`.
 
 ## Optional Senso Publish
 
@@ -245,3 +257,4 @@ build-agent-context \
 - Yutori Web Navigation: `YUTORI_API_KEY`, `YUTORI_BASE_URL`, `YUTORI_POLL_SECONDS`, `YUTORI_TASK_TIMEOUT_SECONDS`, `YUTORI_HTTP_TIMEOUT_SECONDS`, `YUTORI_MAX_STEPS`
 - Numeric Finance: `NUMERIC_API_KEY`, `NUMERIC_BASE_URL`, `NUMERIC_VARIANCE_PATH`, `NUMERIC_TIMEOUT_SECONDS`, `NUMERIC_MATERIALITY_THRESHOLD_PCT`, `NUMERIC_FALLBACK_ENABLED`
 - Tavily External Search: `TAVILY_API_KEY`, `TAVILY_BASE_URL`, `TAVILY_SEARCH_PATH`, `TAVILY_TIMEOUT_SECONDS`, `TAVILY_TOPIC`, `TAVILY_SEARCH_DEPTH`, `TAVILY_INCLUDE_ANSWER`, `TAVILY_FALLBACK_ENABLED`
+- Modulate Voice Interface: `MODULATE_API_KEY`, `MODULATE_BASE_URL`, `MODULATE_ANALYZE_PATH`, `MODULATE_TIMEOUT_SECONDS`, `MODULATE_STRESS_THRESHOLD`, `MODULATE_FALLBACK_ENABLED`
