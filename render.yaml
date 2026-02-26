@@ -22,6 +22,12 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
+      - key: STRUCTURED_QUERY_SQLITE_PATH
+        value: data/system_of_record/sqlite/commerce.db
+      - key: STRUCTURED_QUERY_MAX_ROWS_DEFAULT
+        value: "100"
+      - key: STRUCTURED_QUERY_MAX_ROWS_LIMIT
+        value: "500"
 
       # ── Neo4j GraphRAG ────────────────────────────────────────────────────
       - key: NEO4J_URI

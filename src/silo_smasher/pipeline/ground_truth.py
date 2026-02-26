@@ -12,6 +12,7 @@ from silo_smasher.senso import (
     SensoConfig,
     publish_system_of_record,
 )
+from silo_smasher.structured_query import sync_bundle_to_sqlite
 
 
 def _timestamp_label() -> str:
@@ -110,6 +111,12 @@ def run_ground_truth_pipeline(
     _write_json(raw_snapshot_path, raw_bundle)
     _write_json(context_path, normalized_context)
 
+    sqlite_path = output_root / "sqlite" / "commerce.db"
+    structured_query = sync_bundle_to_sqlite(
+        raw_bundle=raw_bundle,
+        sqlite_path=sqlite_path,
+    )
+
     summary: dict[str, Any] = {
         "timestamp": timestamp,
         "input_path": str(input_path),
@@ -117,6 +124,7 @@ def run_ground_truth_pipeline(
         "raw_snapshot_path": str(raw_snapshot_path),
         "context_path": str(context_path),
         "manifest_path": str(manifest_path),
+        "structured_query": structured_query,
         "senso_publication": None,
     }
 

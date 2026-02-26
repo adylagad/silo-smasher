@@ -25,6 +25,7 @@ Operating rules:
 6. When revenue declines, use finance variance analysis to classify seasonal dip vs accounting anomaly.
 7. If finance analysis indicates regional decline (for example Japan), search external economic news in the last 24 hours.
 8. In voice-command mode, analyze user emotion/intent and prioritize summary mode when stress is detected.
+9. Use run_sql_query to test hypotheses against structured users/products/purchases data before final conclusions.
 
 Final answer JSON schema:
 {

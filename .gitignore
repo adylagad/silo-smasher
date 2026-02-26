@@ -6,6 +6,7 @@ __pycache__/
 *.egg-info/
 data/system_of_record/**/*.json
 data/system_of_record/**/*.jsonl
+data/system_of_record/**/*.db
 !data/system_of_record/**/.gitkeep
 
 # Frontend

@@ -64,6 +64,7 @@ silo-smasher/
 │   ├── orchestrator/           # OpenAI (primary) + Gemini (fallback) agent loop
 │   ├── pipeline/               # Ground-truth pipeline (Airbyte → context → Senso)
 │   ├── senso/                  # Senso system-of-record client
+│   ├── structured_query/       # SQLite read-only SQL tool for hypothesis testing
 │   ├── voice_interface/        # Modulate voice command analyser
 │   ├── web_navigation/         # Yutori browser automation client
 │   └── cli/                   # CLI entry points
@@ -95,6 +96,16 @@ build-agent-context --input examples/synthetic_raw_bundle.json
 
 ```bash
 sync-graph-context
+```
+
+### 2b. Validate structured SQL data (optional)
+
+`build-agent-context` now mirrors the same bundle into SQLite at
+`data/system_of_record/sqlite/commerce.db` for the orchestrator `run_sql_query` tool.
+
+```bash
+sqlite3 data/system_of_record/sqlite/commerce.db \
+  "SELECT status, COUNT(*) AS count FROM purchases GROUP BY status ORDER BY count DESC;"
 ```
 
 ### 3. Run a diagnostic investigation

@@ -95,7 +95,7 @@ def diagnose(request: DiagnoseRequest) -> dict[str, Any]:
 
     The orchestrator:
     1. Generates hypotheses.
-    2. Uses tools (Neo4j GraphRAG, Senso, Numeric, Tavily, Modulate, Yutori) to test them.
+    2. Uses tools (SQL, Neo4j GraphRAG, Senso, Numeric, Tavily, Modulate, Yutori) to test them.
     3. Returns a structured executive brief with confidence scores.
 
     The result is also persisted to S3 as a memory-log entry.

@@ -10,6 +10,11 @@ from silo_smasher.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
 from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
 from silo_smasher.market_signals import ExternalNewsSearchClient
 from silo_smasher.senso.client import SensoClient, SensoConfig
+from silo_smasher.structured_query import (
+    StructuredQuerySettings,
+    StructuredQueryStore,
+    bootstrap_sqlite_from_artifacts,
+)
 from silo_smasher.voice_interface import VoiceCommandAnalyzer
 from silo_smasher.web_navigation import NavigatorClient
 
@@ -34,6 +39,9 @@ class DiagnosticToolRuntime:
         self._revenue_variance_client: RevenueVarianceClient | None = None
         self._external_news_client: ExternalNewsSearchClient | None = None
         self._voice_command_analyzer: VoiceCommandAnalyzer | None = None
+        self._structured_query_store: StructuredQueryStore | None = None
+        self._structured_query_settings = StructuredQuerySettings.from_env()
+        self._sql_bootstrap_state: dict[str, Any] | None = None
         self._tool_map: dict[str, ToolSpec] = {}
         self._init_tools()
 
@@ -193,6 +201,32 @@ class DiagnosticToolRuntime:
                 },
                 handler=self._analyze_voice_command_mode,
             ),
+            "run_sql_query": ToolSpec(
+                name="run_sql_query",
+                description=(
+                    "Run a parameterized read-only SQL query against local structured "
+                    "commerce tables (users, products, purchases, purchase_events_enriched)."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "sql": {"type": "string"},
+                        "params": {
+                            "description": (
+                                "Named (:name) or positional (?) SQL parameters."
+                            ),
+                            "oneOf": [
+                                {"type": "object"},
+                                {"type": "array"},
+                            ],
+                        },
+                        "max_rows": {"type": "integer", "minimum": 1, "maximum": 500},
+                    },
+                    "required": ["sql"],
+                    "additionalProperties": False,
+                },
+                handler=self._run_sql_query,
+            ),
         }
 
     def _ensure_graph_service(self) -> GraphRAGService:
@@ -239,6 +273,26 @@ class DiagnosticToolRuntime:
             return self._voice_command_analyzer
         self._voice_command_analyzer = VoiceCommandAnalyzer.from_env()
         return self._voice_command_analyzer
+
+    def _ensure_structured_query_store(self) -> StructuredQueryStore:
+        if self._structured_query_store:
+            return self._structured_query_store
+
+        self._structured_query_store = StructuredQueryStore(
+            self._structured_query_settings.sqlite_path
+        )
+
+        if not self._structured_query_store.has_data():
+            self._sql_bootstrap_state = bootstrap_sqlite_from_artifacts(
+                store=self._structured_query_store
+            )
+        else:
+            self._sql_bootstrap_state = {
+                "status": "ready",
+                "sqlite_path": str(self._structured_query_store.sqlite_path),
+                "source": {"source_type": "existing_sqlite"},
+            }
+        return self._structured_query_store
 
     def _query_graph_connections(self, arguments: dict[str, Any]) -> dict[str, Any]:
         question = str(arguments.get("question", "")).strip()
@@ -412,3 +466,33 @@ class DiagnosticToolRuntime:
             audio_url=audio_url,
             context=context,
         )
+
+    def _run_sql_query(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        sql = str(arguments.get("sql", "")).strip()
+        if not sql:
+            return {"error": "sql is required"}
+
+        store = self._ensure_structured_query_store()
+        params = arguments.get("params")
+        max_rows = int(
+            arguments.get("max_rows", self._structured_query_settings.max_rows_default)
+        )
+        try:
+            result = store.execute_read_query(
+                sql=sql,
+                params=params,
+                max_rows=max_rows,
+                max_rows_limit=self._structured_query_settings.max_rows_limit,
+            )
+        except Exception as exc:
+            return {
+                "error": str(exc),
+                "query": sql,
+                "bootstrap": self._sql_bootstrap_state,
+            }
+
+        result["source"] = "sqlite_structured_query"
+        result["sqlite_path"] = str(store.sqlite_path)
+        if self._sql_bootstrap_state:
+            result["bootstrap"] = self._sql_bootstrap_state
+        return result
