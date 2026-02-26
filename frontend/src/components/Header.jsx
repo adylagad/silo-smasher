@@ -1,4 +1,4 @@
-import { BookOpen, ExternalLink, Sparkles } from 'lucide-react'
+import { BookOpen, ExternalLink } from 'lucide-react'
 
 export default function Header({ apiStatus, onGuide }) {
   const statusTone =
@@ -20,10 +20,7 @@ export default function Header({ apiStatus, onGuide }) {
             <div className="text-[15px] leading-none font-extrabold tracking-tight truncate">
               Silo <span className="gradient-text">Smasher</span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
-              <Sparkles size={11} className="text-cyan-300" />
-              Find why metrics changed
-            </div>
+            <div className="hidden sm:block text-[11px] text-slate-500 mt-1">Metrics AI</div>
           </div>
         </div>
 

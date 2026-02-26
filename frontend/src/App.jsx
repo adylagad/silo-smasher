@@ -28,13 +28,6 @@ export default function App() {
     return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    if (!localStorage.getItem('silo_guide_seen')) {
-      const t = setTimeout(() => setGuideOpen(true), 800)
-      return () => clearTimeout(t)
-    }
-  }, [])
-
   const submitQuickQuery = (event) => {
     event.preventDefault()
     const text = chatInput.trim()
@@ -70,7 +63,7 @@ export default function App() {
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-300 uppercase tracking-widest">
                     <MessageSquare size={12} className="text-cyan-300" />
-                    Chat
+                    Ask
                   </span>
                   <button
                     type="button"
@@ -95,7 +88,7 @@ export default function App() {
                     disabled={!chatInput.trim()}
                     className="h-10 px-3.5 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 text-xs font-extrabold disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center gap-1"
                   >
-                    Zoom
+                    Open
                     <ArrowUpRight size={12} />
                   </button>
                 </div>

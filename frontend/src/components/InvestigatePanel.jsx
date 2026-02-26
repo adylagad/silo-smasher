@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Sparkles, Loader2, Search, RotateCcw,
+  Loader2, Search, RotateCcw,
   CheckCircle2, AlertCircle, HelpCircle, ArrowRight,
   Activity,
 } from 'lucide-react'
@@ -47,9 +47,6 @@ const StepPipeline = ({ activeStep }) => (
                 : 'text-zinc-500'}`}>
               {step.short}
             </span>
-            {state !== 'pending' && (
-              <span className="text-[8px] text-zinc-700 text-center w-16 leading-tight truncate">{step.tool}</span>
-            )}
           </div>
           {i < STEPS.length - 1 && (
             <motion.div
@@ -135,9 +132,6 @@ const ThinkingOrb = ({ currentStep }) => (
         transition={{ duration: 1.4, repeat: Infinity }}
       >…</motion.span>
     </div>
-    <p className="text-xs text-zinc-600 text-center max-w-xs leading-relaxed">
-      Checking SQL, graph, and market signals.
-    </p>
   </div>
 )
 
@@ -357,20 +351,9 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
             exit={{ opacity: 0, y: -14 }}
             transition={{ duration: 0.28 }}
           >
-            {/* Eyebrow */}
-            <motion.div
-              className="flex items-center gap-2 mb-6"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-            >
-              <div className="w-7 h-7 rounded-xl bg-sky-400/12 border border-sky-400/22 flex items-center justify-center">
-                <Activity size={13} className="text-sky-300" />
-              </div>
-              <span className="text-[10px] font-semibold text-sky-300/70 tracking-widest uppercase">
-                Diagnostic Agent
-              </span>
-            </motion.div>
+            <div className="w-9 h-9 rounded-xl bg-sky-400/12 border border-sky-400/22 flex items-center justify-center mb-5">
+              <Activity size={15} className="text-sky-300" />
+            </div>
 
             {/* Headline */}
             <motion.h1
@@ -381,14 +364,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
             >
               What changed?
             </motion.h1>
-            <motion.p
-              className="text-[13px] text-zinc-500 text-center mb-9 max-w-[420px] leading-relaxed"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.16 }}
-            >
-              Type your question. Get a short answer with evidence.
-            </motion.p>
+            <div className="mb-8 text-[12px] text-zinc-500">Ask a question to start.</div>
 
             {/* Command input */}
             <motion.div
@@ -416,14 +392,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                     autoFocus
                   />
                 </div>
-                <div className="flex items-center justify-between px-4 pb-3 mt-0.5">
-                  <div className="flex items-center gap-2 text-[10px] text-zinc-700">
-                    <kbd className="px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.04] font-mono">↵</kbd>
-                    <span>run</span>
-                    <span className="text-zinc-800">·</span>
-                    <kbd className="px-1.5 py-0.5 rounded border border-white/[0.08] bg-white/[0.04] font-mono text-[9px]">⇧↵</kbd>
-                    <span>newline</span>
-                  </div>
+                <div className="flex items-center justify-end px-4 pb-3 mt-0.5">
                   <button
                     onClick={() => runQuery()}
                     disabled={!query.trim()}
@@ -443,14 +412,12 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <span className="text-[11px] text-zinc-700 self-center mr-1">Try:</span>
               {PRESETS.map(p => (
                 <button
                   key={p}
                   onClick={() => { setQuery(p); runQuery(p) }}
                   className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-zinc-200 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.13] rounded-full px-3 py-1.5 transition-all duration-200"
                 >
-                  <Sparkles size={9} className="text-sky-300/50" />
                   {p.length > 50 ? p.slice(0, 50) + '…' : p}
                 </button>
               ))}

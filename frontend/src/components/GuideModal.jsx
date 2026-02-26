@@ -4,28 +4,23 @@ import { X, Database, Share2, Globe, ShieldCheck, Activity } from 'lucide-react'
 const STEPS = [
   {
     icon: Activity,
-    title: 'Describe the issue',
-    body: 'Type the metric change in plain language.',
+    title: 'Describe',
   },
   {
     icon: Database,
-    title: 'Generate ideas',
-    body: 'The agent drafts likely causes.',
+    title: 'Hypotheses',
   },
   {
     icon: Share2,
-    title: 'Check connections',
-    body: 'Graph links show what is connected.',
+    title: 'Graph',
   },
   {
     icon: Globe,
-    title: 'Check outside events',
-    body: 'News and market signals are compared.',
+    title: 'External',
   },
   {
     icon: ShieldCheck,
-    title: 'Summarize',
-    body: 'You get a short answer with confidence.',
+    title: 'Summary',
   },
 ]
 
@@ -54,7 +49,7 @@ export default function GuideModal({ open, onClose }) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-300/20 flex-shrink-0">
               <div>
                 <h2 className="text-sm font-extrabold text-white">How it works</h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">5 quick steps</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Quick flow</p>
               </div>
               <button
                 onClick={onClose}
@@ -91,20 +86,13 @@ export default function GuideModal({ open, onClose }) {
                         </span>
                         <span className="text-xs font-bold text-slate-100">{step.title}</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 leading-relaxed">{step.body}</p>
                     </div>
                   </motion.div>
                 )
               })}
             </div>
 
-            <div className="px-5 py-4 border-t border-slate-300/20 flex-shrink-0 space-y-2.5">
-              <div className="rounded-xl bg-sky-400/10 border border-sky-300/20 p-3">
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  <span className="font-bold text-sky-200">Tip:</span>{' '}
-                  Scan charts first, then open chat.
-                </p>
-              </div>
+            <div className="px-5 py-4 border-t border-slate-300/20 flex-shrink-0">
               <button
                 onClick={onClose}
                 className="w-full h-9 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-300 text-slate-950 text-xs font-extrabold transition-opacity hover:opacity-95"

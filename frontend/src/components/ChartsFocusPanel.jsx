@@ -70,7 +70,7 @@ const CardTitle = ({ icon: Icon, title, subtitle, right }) => (
       </span>
       <div>
         <div className="text-[11px] font-bold text-slate-100 uppercase tracking-widest">{title}</div>
-        <div className="text-[11px] text-slate-400 mt-0.5">{subtitle}</div>
+        {subtitle ? <div className="text-[11px] text-slate-400 mt-0.5">{subtitle}</div> : null}
       </div>
     </div>
     {right}
@@ -107,13 +107,10 @@ export default function ChartsFocusPanel() {
           className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
         >
           <div>
-            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Metrics Dashboard</div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Dashboard</div>
             <h2 className="text-[2rem] md:text-[2.35rem] leading-[1.05] tracking-tight text-white font-extrabold mt-1">
-              Metrics first. <span className="gradient-text">Chat when needed.</span>
+              Metrics. <span className="gradient-text">Then chat.</span>
             </h2>
-            <p className="text-[12px] md:text-[13px] text-slate-400 mt-2 max-w-[620px]">
-              Pick a range, spot changes, then open chat for root cause.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 self-start lg:self-auto">
@@ -163,8 +160,7 @@ export default function ChartsFocusPanel() {
                       ? `$${(Math.abs(delta) / 1000).toFixed(1)}K`
                       : option.key === 'tickets'
                       ? Math.abs(delta)
-                      : `${Math.abs(delta).toFixed(1)} pts`}{' '}
-                    vs last week
+                      : `${Math.abs(delta).toFixed(1)} pts`}
                   </div>
                 )}
               </button>
@@ -181,7 +177,6 @@ export default function ChartsFocusPanel() {
           <CardTitle
             icon={Activity}
             title={`${selectedTrack.label} Trend`}
-            subtitle={`${weeks}-week trend`}
             right={<span className="soft-pill px-2.5 py-1 text-[10px] text-slate-300 font-semibold">Latest: {latest.week}</span>}
           />
           <ResponsiveContainer width="100%" height={300}>
@@ -221,7 +216,7 @@ export default function ChartsFocusPanel() {
             transition={{ duration: 0.35, delay: 0.14 }}
             className="card panel-hover p-4 md:p-5 xl:col-span-2"
           >
-            <CardTitle icon={BarChart3} title="Operating Signals" subtitle="Conversion, churn, tickets" />
+            <CardTitle icon={BarChart3} title="Operating Signals" />
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={series} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
@@ -275,7 +270,7 @@ export default function ChartsFocusPanel() {
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
           <div className="card panel-hover p-4 md:p-5 lg:col-span-2">
-            <CardTitle icon={Radar} title="Revenue by Region" subtitle="Weekly totals" />
+            <CardTitle icon={Radar} title="Revenue by Region" />
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={series} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
@@ -291,18 +286,14 @@ export default function ChartsFocusPanel() {
           </div>
 
           <div className="card panel-hover p-4 md:p-5 flex flex-col justify-between">
-            <CardTitle icon={Activity} title="Anomaly Note" subtitle="Quick read" />
+            <CardTitle icon={Activity} title="Anomaly Note" />
             <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 px-3 py-3">
-              <div className="text-[11px] uppercase tracking-wider text-rose-200/80 font-bold">Primary signal</div>
-              <p className="text-[12px] leading-relaxed text-slate-100 mt-1">
-                MRR is down while churn and tickets are up, mostly in EU and US.
-              </p>
+              <div className="text-[11px] uppercase tracking-wider text-rose-200/80 font-bold">Signal</div>
+              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">MRR down. Churn up. Tickets up.</div>
             </div>
             <div className="rounded-xl border border-sky-300/20 bg-sky-400/10 px-3 py-3 mt-3">
-              <div className="text-[11px] uppercase tracking-wider text-sky-200/90 font-bold">Next move</div>
-              <p className="text-[12px] leading-relaxed text-slate-100 mt-1">
-                Open chat to test likely causes.
-              </p>
+              <div className="text-[11px] uppercase tracking-wider text-sky-200/90 font-bold">Action</div>
+              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">Open chat.</div>
             </div>
           </div>
         </motion.div>

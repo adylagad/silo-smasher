@@ -83,8 +83,6 @@ export const STEP_DURATIONS = [900, 1100, 1000, 900, 750]
 export const PRESETS = [
   'MRR down 15% this week. Why?',
   'UK sales down 20%. Root cause?',
-  'Q3 revenue missed by 12%. Why?',
-  'Churn jumped to 8%. What changed?',
 ]
 
 export const STATUS_META = {
