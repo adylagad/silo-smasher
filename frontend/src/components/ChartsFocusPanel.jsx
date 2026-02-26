@@ -176,7 +176,7 @@ export default function ChartsFocusPanel() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.1 }}
-          className="card p-4 md:p-5"
+          className="card panel-hover p-4 md:p-5"
         >
           <CardTitle
             icon={Activity}
@@ -219,7 +219,7 @@ export default function ChartsFocusPanel() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.14 }}
-            className="card p-4 md:p-5 xl:col-span-2"
+            className="card panel-hover p-4 md:p-5 xl:col-span-2"
           >
             <CardTitle icon={BarChart3} title="Operating Signals" subtitle="Conversion, churn, and support load" />
             <ResponsiveContainer width="100%" height={240}>
@@ -241,7 +241,7 @@ export default function ChartsFocusPanel() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, delay: 0.16 }}
-            className="card p-4 md:p-5"
+            className="card panel-hover p-4 md:p-5"
           >
             <CardTitle icon={PieChartIcon} title="Regional Mix" subtitle={`${latest.week} contribution`} />
             <ResponsiveContainer width="100%" height={220}>
@@ -274,7 +274,7 @@ export default function ChartsFocusPanel() {
           transition={{ duration: 0.35, delay: 0.2 }}
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
-          <div className="card p-4 md:p-5 lg:col-span-2">
+          <div className="card panel-hover p-4 md:p-5 lg:col-span-2">
             <CardTitle icon={Radar} title="Revenue by Region" subtitle="Absolute contribution trend" />
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={series} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
@@ -290,7 +290,7 @@ export default function ChartsFocusPanel() {
             </ResponsiveContainer>
           </div>
 
-          <div className="card p-4 md:p-5 flex flex-col justify-between">
+          <div className="card panel-hover p-4 md:p-5 flex flex-col justify-between">
             <CardTitle icon={Activity} title="Anomaly Note" subtitle="Auto-generated analyst context" />
             <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 px-3 py-3">
               <div className="text-[11px] uppercase tracking-wider text-rose-200/80 font-bold">Primary signal</div>
