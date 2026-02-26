@@ -20,13 +20,22 @@ class RevenueVarianceSettings:
     def from_env(cls) -> "RevenueVarianceSettings":
         fallback_value = os.getenv("NUMERIC_FALLBACK_ENABLED", "true").strip().lower()
         return cls(
-            api_key=os.getenv("NUMERIC_API_KEY"),
+            api_key=cls._clean_api_key(os.getenv("NUMERIC_API_KEY")),
             base_url=os.getenv("NUMERIC_BASE_URL", "https://api.numeric.io").rstrip("/"),
             variance_path=os.getenv("NUMERIC_VARIANCE_PATH", "/v1/variance/analysis").strip(),
             timeout_seconds=float(os.getenv("NUMERIC_TIMEOUT_SECONDS", "20")),
             materiality_threshold_pct=float(os.getenv("NUMERIC_MATERIALITY_THRESHOLD_PCT", "0.1")),
             fallback_enabled=fallback_value in {"1", "true", "yes", "on"},
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 class RevenueVarianceClient:

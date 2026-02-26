@@ -69,13 +69,22 @@ class FastinoSettings:
             fail_mode = "open"
         return cls(
             enabled=enabled_value in {"1", "true", "yes", "on"},
-            api_key=os.getenv("FASTINO_API_KEY"),
+            api_key=cls._clean_api_key(os.getenv("FASTINO_API_KEY")),
             base_url=os.getenv("FASTINO_BASE_URL", "https://api.fastino.ai").rstrip("/"),
             timeout_seconds=float(os.getenv("FASTINO_TIMEOUT_SECONDS", "10")),
             pii_threshold=float(os.getenv("FASTINO_PII_THRESHOLD", "0.35")),
             action_threshold=float(os.getenv("FASTINO_ACTION_THRESHOLD", "0.5")),
             fail_mode=fail_mode,
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 @dataclass

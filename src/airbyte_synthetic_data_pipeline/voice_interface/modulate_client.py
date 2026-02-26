@@ -58,13 +58,22 @@ class VoiceCommandSettings:
         threshold = float(os.getenv("MODULATE_STRESS_THRESHOLD", "0.6"))
         threshold = max(0.0, min(threshold, 1.0))
         return cls(
-            api_key=os.getenv("MODULATE_API_KEY"),
+            api_key=cls._clean_api_key(os.getenv("MODULATE_API_KEY")),
             base_url=os.getenv("MODULATE_BASE_URL", "https://api.modulate.ai").rstrip("/"),
             analyze_path=analyze_path,
             timeout_seconds=float(os.getenv("MODULATE_TIMEOUT_SECONDS", "20")),
             stress_threshold=threshold,
             fallback_enabled=fallback_value in {"1", "true", "yes", "on"},
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 class VoiceCommandAnalyzer:

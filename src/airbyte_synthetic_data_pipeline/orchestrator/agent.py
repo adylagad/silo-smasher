@@ -95,6 +95,7 @@ class DiagnosticOrchestrator:
                 "error": "all_providers_failed",
                 "attempts": attempts,
                 "_safety": safety_report,
+                "fallback_response": self._local_provider_fallback(runtime, question),
             }
         finally:
             runtime.close()
@@ -352,3 +353,38 @@ class DiagnosticOrchestrator:
             }
 
         return runtime.call(tool_name, arguments)
+
+    @staticmethod
+    def _local_provider_fallback(
+        runtime: DiagnosticToolRuntime,
+        question: str,
+    ) -> dict[str, Any]:
+        local_context = runtime.call(
+            "get_latest_system_record_entries",
+            {"count": 1, "include_context_preview": True},
+        )
+        return {
+            "source": "local_fallback",
+            "metric_summary": (
+                "Model providers unavailable; using latest local system-of-record summary."
+            ),
+            "hypotheses": [
+                {
+                    "name": "Provider availability issue",
+                    "status": "inconclusive",
+                    "confidence": 0.0,
+                    "evidence": [
+                        "Primary and fallback model providers failed in this run.",
+                    ],
+                }
+            ],
+            "most_likely_root_cause": (
+                "Unable to complete model reasoning due to provider failures; check quota/rate limits."
+            ),
+            "confidence_overall": 0.0,
+            "recommended_next_queries": [
+                f"Retry question when provider quota is restored: {question}",
+                "Inspect local context preview from fallback payload.",
+            ],
+            "local_context": local_context,
+        }

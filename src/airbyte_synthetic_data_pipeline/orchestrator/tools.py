@@ -246,28 +246,57 @@ class DiagnosticToolRuntime:
             return {"error": "question is required"}
         top_k = int(arguments.get("top_k", 5))
         max_hops = int(arguments.get("max_hops", 2))
-        service = self._ensure_graph_service()
-        return service.answer_with_graph_context(
-            question=question,
-            top_k=max(1, min(top_k, 15)),
-            max_hops=max(1, min(max_hops, 3)),
-        )
+        try:
+            service = self._ensure_graph_service()
+            return service.answer_with_graph_context(
+                question=question,
+                top_k=max(1, min(top_k, 15)),
+                max_hops=max(1, min(max_hops, 3)),
+            )
+        except Exception as exc:
+            fallback = self._get_latest_system_record_entries(
+                {"count": 1, "include_context_preview": True}
+            )
+            return {
+                "source": "local_fallback",
+                "question": question,
+                "message": (
+                    "Graph retrieval unavailable; returned latest local system-of-record context."
+                ),
+                "fallback_reason": str(exc),
+                "local_context": fallback,
+            }
 
     def _get_senso_content(self, arguments: dict[str, Any]) -> dict[str, Any]:
         content_id = str(arguments.get("content_id", "")).strip()
         if not content_id:
             return {"error": "content_id is required"}
-        client = self._ensure_senso_client()
-        detail = client.get_content(content_id)
-        return {
-            "id": detail.get("id"),
-            "title": detail.get("title"),
-            "summary": detail.get("summary"),
-            "processing_status": detail.get("processing_status"),
-            "created_at": detail.get("created_at"),
-            "updated_at": detail.get("updated_at"),
-            "text": detail.get("text"),
-        }
+        try:
+            client = self._ensure_senso_client()
+            detail = client.get_content(content_id)
+            return {
+                "source": "senso_api",
+                "id": detail.get("id"),
+                "title": detail.get("title"),
+                "summary": detail.get("summary"),
+                "processing_status": detail.get("processing_status"),
+                "created_at": detail.get("created_at"),
+                "updated_at": detail.get("updated_at"),
+                "text": detail.get("text"),
+            }
+        except Exception as exc:
+            fallback = self._get_latest_system_record_entries(
+                {"count": 1, "include_context_preview": True}
+            )
+            return {
+                "source": "local_fallback",
+                "requested_content_id": content_id,
+                "message": (
+                    "Senso content unavailable; returned latest local system-of-record context."
+                ),
+                "fallback_reason": str(exc),
+                "local_context": fallback,
+            }
 
     def _get_latest_system_record_entries(self, arguments: dict[str, Any]) -> dict[str, Any]:
         count = int(arguments.get("count", 3))

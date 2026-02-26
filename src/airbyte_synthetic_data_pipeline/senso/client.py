@@ -21,7 +21,7 @@ class SensoConfig:
 
     @classmethod
     def from_env(cls) -> "SensoConfig":
-        api_key = os.getenv("SENSO_API_KEY")
+        api_key = cls._clean_api_key(os.getenv("SENSO_API_KEY"))
         if not api_key:
             raise RuntimeError("SENSO_API_KEY is required when publishing to Senso.")
         return cls(
@@ -30,6 +30,15 @@ class SensoConfig:
             poll_seconds=int(os.getenv("SENSO_POLL_SECONDS", "2")),
             timeout_seconds=int(os.getenv("SENSO_TIMEOUT_SECONDS", "120")),
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 class SensoClient:
@@ -90,4 +99,3 @@ class SensoClient:
             if time.monotonic() > deadline:
                 raise TimeoutError(f"Timed out waiting for content {content_id} to complete.")
             time.sleep(self._config.poll_seconds)
-

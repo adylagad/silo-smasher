@@ -26,7 +26,7 @@ class TavilySearchSettings:
         if not search_path.startswith("/"):
             search_path = f"/{search_path}"
         return cls(
-            api_key=os.getenv("TAVILY_API_KEY"),
+            api_key=cls._clean_api_key(os.getenv("TAVILY_API_KEY")),
             base_url=os.getenv("TAVILY_BASE_URL", "https://api.tavily.com").rstrip("/"),
             search_path=search_path,
             timeout_seconds=float(os.getenv("TAVILY_TIMEOUT_SECONDS", "20")),
@@ -35,6 +35,15 @@ class TavilySearchSettings:
             include_answer=os.getenv("TAVILY_INCLUDE_ANSWER", "basic").strip() or "basic",
             fallback_enabled=fallback_value in {"1", "true", "yes", "on"},
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 class ExternalNewsSearchClient:

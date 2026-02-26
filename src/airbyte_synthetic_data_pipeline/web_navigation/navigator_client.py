@@ -22,13 +22,22 @@ class NavigatorSettings:
     @classmethod
     def from_env(cls) -> "NavigatorSettings":
         return cls(
-            api_key=os.getenv("YUTORI_API_KEY"),
+            api_key=cls._clean_api_key(os.getenv("YUTORI_API_KEY")),
             base_url=os.getenv("YUTORI_BASE_URL", "https://api.yutori.com").rstrip("/"),
             poll_seconds=float(os.getenv("YUTORI_POLL_SECONDS", "3")),
             task_timeout_seconds=float(os.getenv("YUTORI_TASK_TIMEOUT_SECONDS", "180")),
             http_timeout_seconds=float(os.getenv("YUTORI_HTTP_TIMEOUT_SECONDS", "30")),
             max_steps=int(os.getenv("YUTORI_MAX_STEPS", "75")),
         )
+
+    @staticmethod
+    def _clean_api_key(value: str | None) -> str | None:
+        if not value:
+            return None
+        cleaned = value.strip()
+        if cleaned in {"__MISSING__", "__SET_ME__"}:
+            return None
+        return cleaned
 
 
 class NavigatorClient:
@@ -66,7 +75,14 @@ class NavigatorClient:
             max_steps=chosen_steps,
         )
         if "error" in created_payload:
-            return created_payload
+            return self._local_portal_fallback(
+                portal_url=portal_url,
+                report_hint=report_hint,
+                reason=(
+                    f"Yutori task creation failed. "
+                    f"{created_payload.get('detail') or created_payload.get('error')}"
+                ),
+            )
 
         task_id = self._extract_task_id(created_payload)
         if not task_id:
