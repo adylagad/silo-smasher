@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from airbyte_synthetic_data_pipeline.context import normalize_raw_bundle
-from airbyte_synthetic_data_pipeline.senso import (
+from silo_smasher.context import normalize_raw_bundle
+from silo_smasher.senso import (
     SensoClient,
     SensoConfig,
     publish_system_of_record,

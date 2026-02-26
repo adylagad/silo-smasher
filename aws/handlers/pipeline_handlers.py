@@ -70,7 +70,7 @@ def ingest_data(event: dict[str, Any], context: Any) -> dict[str, Any]:
         }
 
     try:
-        from airbyte_synthetic_data_pipeline.synthetic_sync import (
+        from silo_smasher.synthetic_sync import (
             _build_client,
             _ensure_source,
             _pick_workspace_id,
@@ -115,7 +115,7 @@ def build_agent_context(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     Returns context_path and manifest_path.
     """
-    from airbyte_synthetic_data_pipeline.pipeline import run_ground_truth_pipeline
+    from silo_smasher.pipeline import run_ground_truth_pipeline
 
     ingest = (event.get("ingest") or {}).get("ingest_result") or {}
     input_path_str = (
@@ -153,8 +153,8 @@ def sync_graph_context(event: dict[str, Any], context: Any) -> dict[str, Any]:
     Reads:
       event.context.context_result.context_path   (from BuildAgentContext)
     """
-    from airbyte_synthetic_data_pipeline.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
-    from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
+    from silo_smasher.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
+    from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
 
     ctx_result = (event.get("context") or {}).get("context_result") or {}
     context_path_str = ctx_result.get("context_path") or event.get("context_path")
@@ -195,7 +195,7 @@ def run_diagnosis(event: dict[str, Any], context: Any) -> dict[str, Any]:
       event.question               — the diagnostic question.
       event.context.context_result — used as optional extra context.
     """
-    from airbyte_synthetic_data_pipeline.orchestrator import (
+    from silo_smasher.orchestrator import (
         DiagnosticOrchestrator,
         OrchestratorSettings,
     )
@@ -233,7 +233,7 @@ def log_memory(event: dict[str, Any], context: Any) -> dict[str, Any]:
       event.diagnosis.diagnosis   — the orchestrator output.
       event.question              — the original diagnostic question.
     """
-    from airbyte_synthetic_data_pipeline.memory import MemoryLogger
+    from silo_smasher.memory import MemoryLogger
 
     diagnosis_wrapper = event.get("diagnosis") or {}
     diagnosis = diagnosis_wrapper.get("diagnosis") or {}

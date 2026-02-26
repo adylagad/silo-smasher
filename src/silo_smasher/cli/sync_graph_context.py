@@ -6,8 +6,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from airbyte_synthetic_data_pipeline.graph import GraphSettings, Neo4jGraphStore
-from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
+from silo_smasher.graph import GraphSettings, Neo4jGraphStore
+from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
 
 
 def _latest_context_file(base_dir: Path) -> Path:

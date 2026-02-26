@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 
-from airbyte_synthetic_data_pipeline.memory import MemoryLogger
-from airbyte_synthetic_data_pipeline.orchestrator import (
+from silo_smasher.memory import MemoryLogger
+from silo_smasher.orchestrator import (
     DiagnosticOrchestrator,
     OrchestratorSettings,
 )

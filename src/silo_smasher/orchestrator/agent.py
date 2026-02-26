@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import OpenAI, OpenAIError
 
-from airbyte_synthetic_data_pipeline.guardrails import FastinoSafetyEngine
+from silo_smasher.guardrails import FastinoSafetyEngine
 
 from .config import OrchestratorSettings
 from .tools import DiagnosticToolRuntime

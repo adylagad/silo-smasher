@@ -212,9 +212,9 @@ def build_lambda_zip() -> bytes:
         log(f"added handler: {handler_path.name}")
 
         # Package source (our library)
-        pkg_root = REPO_ROOT / "src" / "airbyte_synthetic_data_pipeline"
+        pkg_root = REPO_ROOT / "src" / "silo_smasher"
         for py_file in pkg_root.rglob("*.py"):
-            arcname = "airbyte_synthetic_data_pipeline" + str(py_file)[len(str(pkg_root)):]
+            arcname = "silo_smasher" + str(py_file)[len(str(pkg_root)):]
             zf.write(py_file, arcname)
         log("added package source")
 

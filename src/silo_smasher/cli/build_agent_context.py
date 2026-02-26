@@ -7,7 +7,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from airbyte_synthetic_data_pipeline.pipeline import run_ground_truth_pipeline
+from silo_smasher.pipeline import run_ground_truth_pipeline
 
 
 def _parse_args() -> argparse.Namespace:

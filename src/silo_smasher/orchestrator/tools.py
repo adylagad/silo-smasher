@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from airbyte_synthetic_data_pipeline.finance import RevenueVarianceClient
-from airbyte_synthetic_data_pipeline.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
-from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
-from airbyte_synthetic_data_pipeline.market_signals import ExternalNewsSearchClient
-from airbyte_synthetic_data_pipeline.senso.client import SensoClient, SensoConfig
-from airbyte_synthetic_data_pipeline.voice_interface import VoiceCommandAnalyzer
-from airbyte_synthetic_data_pipeline.web_navigation import NavigatorClient
+from silo_smasher.finance import RevenueVarianceClient
+from silo_smasher.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
+from silo_smasher.graph.bedrock_embedder import BedrockEmbedder
+from silo_smasher.market_signals import ExternalNewsSearchClient
+from silo_smasher.senso.client import SensoClient, SensoConfig
+from silo_smasher.voice_interface import VoiceCommandAnalyzer
+from silo_smasher.web_navigation import NavigatorClient
 
 
 ToolHandler = Callable[[dict[str, Any]], dict[str, Any]]

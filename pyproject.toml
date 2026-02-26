@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "airbyte-synthetic-data-pipeline"
+name = "silo-smasher"
 version = "0.1.0"
-description = "Starter for pulling synthetic data through Airbyte."
+description = "Autonomous Root-Cause Investigator — Graph-Augmented Agentic BI that correlates structured data, internal graph context, and external signals to explain why business metrics change."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -21,10 +21,10 @@ dependencies = [
 ]
 
 [project.scripts]
-build-agent-context = "airbyte_synthetic_data_pipeline.cli.build_agent_context:main"
-run-diagnostic-orchestrator = "airbyte_synthetic_data_pipeline.cli.run_diagnostic_orchestrator:main"
-sync-graph-context = "airbyte_synthetic_data_pipeline.cli.sync_graph_context:main"
-query-graph-rag = "airbyte_synthetic_data_pipeline.cli.query_graph_rag:main"
+build-agent-context = "silo_smasher.cli.build_agent_context:main"
+run-diagnostic-orchestrator = "silo_smasher.cli.run_diagnostic_orchestrator:main"
+sync-graph-context = "silo_smasher.cli.sync_graph_context:main"
+query-graph-rag = "silo_smasher.cli.query_graph_rag:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

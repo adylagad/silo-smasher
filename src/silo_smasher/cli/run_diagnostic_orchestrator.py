@@ -6,7 +6,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from airbyte_synthetic_data_pipeline.orchestrator import (
+from silo_smasher.orchestrator import (
     DiagnosticOrchestrator,
     OrchestratorSettings,
 )
