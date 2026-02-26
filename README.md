@@ -69,6 +69,9 @@ silo-smasher/
 │   ├── voice_interface/        # Modulate voice command analyser
 │   ├── web_navigation/         # Yutori browser automation client
 │   └── cli/                   # CLI entry points
+├── mcp/                        # MCP server exposure (graph + Senso tools)
+│   ├── server.py
+│   └── README.md
 ├── data/system_of_record/      # Local artefacts (raw snapshots, context JSON, manifest)
 ├── data/internal_signals/       # Synthetic Slack/Jira-style internal messages
 ├── examples/
@@ -169,6 +172,18 @@ Then check monitor state:
 
 ```bash
 curl http://localhost:8000/monitor
+```
+
+### 7. Run MCP server exposure
+
+```bash
+python mcp/server.py --transport stdio
+```
+
+Optional HTTP transport:
+
+```bash
+python mcp/server.py --transport streamable-http --host 127.0.0.1 --port 8001 --mount-path /mcp
 ```
 
 ---

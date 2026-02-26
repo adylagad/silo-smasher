@@ -351,7 +351,35 @@ This document explains how and why each integrated tool is used, phase by phase,
 - Inputs: metric config, threshold, interval, optional monitor notification vars.
 - Output: monitor runtime state, auto-triggered diagnosis `run_id`, S3 memory key, optional notification result.
 
-## Phase 12: End-to-End Runtime Sequence
+## Phase 12: MCP Server Exposure
+
+### Why this phase exists
+- Expose core graph and system-of-record retrieval as MCP tools for any MCP-compatible host.
+- Let Claude Desktop/Cursor-style clients call the same grounded data tools directly.
+
+### Tools used
+- Python MCP SDK (`mcp[cli]`).
+- Existing orchestration tool runtime (`query_graph_connections`, `get_senso_content` handlers).
+
+### How it is used
+- Start server:
+  - `python mcp/server.py --transport stdio`
+- Exposed MCP tools:
+  - `query_graph_connections(question, top_k, max_hops)`
+  - `get_senso_content(content_id)`
+- Supports HTTP transport when needed:
+  - `python mcp/server.py --transport streamable-http --host 127.0.0.1 --port 8001 --mount-path /mcp`
+
+### Code references
+- `mcp/server.py`
+- `mcp/README.md`
+- `src/silo_smasher/orchestrator/tools.py`
+
+### Key inputs and outputs
+- Inputs: Neo4j/AWS/Senso env vars plus MCP transport config.
+- Output: MCP tool responses with graph evidence or Senso-backed ground-truth payloads.
+
+## Phase 13: End-to-End Runtime Sequence
 
 1. Pull or reuse source data through Airbyte.
 2. Normalize into deterministic agent-ready context.
@@ -381,6 +409,7 @@ This document explains how and why each integrated tool is used, phase by phase,
 | Tavily Search API | 9 | Outside-world economic signal detection for root-cause support |
 | Modulate Velma 2.0 | 10 | Voice intent/emotion-driven response depth control |
 | FastAPI Monitoring Runtime | 11 | Proactive trigger loop and automatic diagnosis on threshold breach |
+| MCP SDK Server | 12 | Make graph and system-of-record tools available to external MCP hosts |
 
 ## Notes on Defaults vs Unique Secrets
 
