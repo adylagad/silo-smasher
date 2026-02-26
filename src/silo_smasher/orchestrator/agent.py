@@ -96,6 +96,12 @@ class DiagnosticOrchestrator:
                     }
                 )
 
+            if self._settings.enable_local_demo_fallback:
+                payload = self._local_demo_response(runtime=runtime, question=question, attempts=attempts)
+                payload["_provider"] = "local_demo"
+                payload["_safety"] = safety_report
+                return payload
+
             return {
                 "error": "all_providers_failed",
                 "attempts": attempts,
@@ -360,6 +366,218 @@ class DiagnosticOrchestrator:
             }
 
         return runtime.call(tool_name, arguments)
+
+    def _local_demo_response(
+        self,
+        *,
+        runtime: DiagnosticToolRuntime,
+        question: str,
+        attempts: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        sql_status = runtime.call(
+            "run_sql_query",
+            {
+                "sql": (
+                    "SELECT status, COUNT(*) AS event_count "
+                    "FROM purchases "
+                    "GROUP BY status "
+                    "ORDER BY event_count DESC"
+                ),
+                "max_rows": 10,
+            },
+        )
+        sql_revenue = runtime.call(
+            "run_sql_query",
+            {
+                "sql": (
+                    "SELECT u.country_code AS country_code, "
+                    "ROUND(SUM(CASE WHEN p.status = 'purchased' THEN pr.price ELSE 0 END), 2) AS purchased_revenue, "
+                    "COUNT(*) AS event_count "
+                    "FROM purchases p "
+                    "LEFT JOIN users u ON u.id = p.user_id "
+                    "LEFT JOIN products pr ON pr.id = p.product_id "
+                    "GROUP BY u.country_code "
+                    "ORDER BY purchased_revenue DESC"
+                ),
+                "max_rows": 10,
+            },
+        )
+        internal_signals = runtime.call(
+            "search_internal_communications",
+            {
+                "query": f"{question} checkout payment bug release incident",
+                "hours_back": 240,
+                "max_results": 6,
+            },
+        )
+        variance = runtime.call(
+            "analyze_revenue_variance",
+            {
+                "current_revenue": 84500,
+                "prior_revenue": 96200,
+                "period_label": "Current Week vs Prior Week",
+                "region": "UK",
+                "historical_change_pct": -0.04,
+                "notes": "Local demo fallback using synthetic structured and internal signals.",
+            },
+        )
+        external_news = runtime.call(
+            "search_external_economic_news",
+            {
+                "country": "UK",
+                "query": "UK logistics disruption and checkout outage news in the last 24 hours",
+                "hours_back": 24,
+                "max_results": 5,
+            },
+        )
+        graph_context = runtime.call(
+            "query_graph_connections",
+            {
+                "question": question,
+                "top_k": 3,
+                "max_hops": 2,
+            },
+        )
+        local_context = runtime.call(
+            "get_latest_system_record_entries",
+            {"count": 1, "include_context_preview": True},
+        )
+
+        status_rows = sql_status.get("rows", []) if isinstance(sql_status, dict) else []
+        status_map: dict[str, int] = {}
+        for row in status_rows:
+            if not isinstance(row, dict):
+                continue
+            key = str(row.get("status", "")).strip().lower()
+            value = row.get("event_count")
+            if key and isinstance(value, (int, float)):
+                status_map[key] = int(value)
+
+        internal_results = (
+            internal_signals.get("results", [])
+            if isinstance(internal_signals, dict) and isinstance(internal_signals.get("results"), list)
+            else []
+        )
+        external_results = (
+            external_news.get("results", [])
+            if isinstance(external_news, dict) and isinstance(external_news.get("results"), list)
+            else []
+        )
+
+        top_internal = internal_results[0] if internal_results else {}
+        top_external = external_results[0] if external_results else {}
+        top_internal_text = (
+            str(top_internal.get("text", "")).strip()
+            if isinstance(top_internal, dict)
+            else ""
+        )
+        top_external_title = (
+            str(top_external.get("title", "")).strip()
+            if isinstance(top_external, dict)
+            else ""
+        )
+
+        variance_classification = (
+            str(variance.get("classification", "")).strip().lower()
+            if isinstance(variance, dict)
+            else ""
+        )
+        likely_anomaly = variance_classification in {
+            "accounting_anomaly_likely",
+            "operational_anomaly_likely",
+        }
+
+        hypothesis_checkout_status = "supported" if internal_results else "inconclusive"
+        hypothesis_checkout_confidence = 0.88 if internal_results else 0.42
+        hypothesis_external_status = "supported" if external_results else "inconclusive"
+        hypothesis_external_confidence = 0.74 if external_results else 0.35
+        hypothesis_accounting_status = "rejected" if likely_anomaly else "inconclusive"
+        hypothesis_accounting_confidence = 0.64 if likely_anomaly else 0.41
+
+        purchased_count = status_map.get("purchased", 0)
+        returned_count = status_map.get("returned", 0)
+        carted_count = status_map.get("carted", 0)
+        confidence_overall = 0.84 if internal_results and likely_anomaly else 0.67
+
+        metric_summary = (
+            "Demo mode: structured SQL and internal communication signals indicate a checkout "
+            "and operations incident coinciding with the revenue dip."
+        )
+        root_cause = (
+            "Most likely root cause is a UK checkout regression after release combined with "
+            "shipping/logistics delays, supported by internal incident chatter and external context."
+        )
+        brief = (
+            f"{metric_summary} Structured events show purchased={purchased_count}, "
+            f"returned={returned_count}, carted={carted_count}. "
+            f"Top internal signal: {top_internal_text or 'No internal message match found.'} "
+            f"External signal: {top_external_title or 'No external headline found; using mock/local context.'}"
+        )
+
+        return {
+            "mode": "local_demo_fallback",
+            "degraded_mode": True,
+            "metric_summary": metric_summary,
+            "brief": brief,
+            "hypotheses": [
+                {
+                    "name": "Checkout regression introduced in latest release impacted UK conversion.",
+                    "status": hypothesis_checkout_status,
+                    "confidence": hypothesis_checkout_confidence,
+                    "evidence": [
+                        f"Internal matches found: {len(internal_results)}",
+                        top_internal_text or "No direct checkout incident message was matched.",
+                    ],
+                },
+                {
+                    "name": "Regional logistics disruption amplified revenue softness.",
+                    "status": hypothesis_external_status,
+                    "confidence": hypothesis_external_confidence,
+                    "evidence": [
+                        top_external_title or "No external headline found in search output.",
+                        (
+                            str(external_news.get("answer", ""))
+                            if isinstance(external_news, dict)
+                            else "External news tool unavailable."
+                        ),
+                    ],
+                },
+                {
+                    "name": "Pure accounting anomaly with no operational trigger.",
+                    "status": hypothesis_accounting_status,
+                    "confidence": hypothesis_accounting_confidence,
+                    "evidence": [
+                        (
+                            str(variance.get("cfo_explanation", ""))
+                            if isinstance(variance, dict)
+                            else "Variance tool unavailable."
+                        ),
+                    ],
+                },
+            ],
+            "most_likely_root_cause": root_cause,
+            "confidence_overall": confidence_overall,
+            "recommended_next_queries": [
+                "Run SQL by region and hour for checkout failures around release timestamp.",
+                "Correlate support ticket spikes with payment decline events and carrier delays.",
+                "Validate mitigation rollout impact on UK conversion over the next 6 hours.",
+            ],
+            "actions": [
+                "Prioritize summary brief for execs, then open deep-dive for engineering and operations.",
+                "Verify release rollback/hotfix impact against UK checkout conversion.",
+                "Audit carrier SLA breaches and reroute impacted shipments where possible.",
+            ],
+            "tool_outputs": {
+                "sql_status": sql_status,
+                "sql_revenue": sql_revenue,
+                "internal_signals": internal_signals,
+                "variance": variance,
+                "external_news": external_news,
+                "graph_context": graph_context,
+                "local_context": local_context,
+            },
+            "provider_attempts": attempts,
+        }
 
     @staticmethod
     def _local_provider_fallback(

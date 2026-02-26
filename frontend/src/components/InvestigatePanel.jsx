@@ -191,8 +191,8 @@ const normalizeDiagnosticResult = (payload) => {
     brief,
     hypotheses,
     actions,
-    degraded_mode: providerFailure,
-    provider_attempts: providerFailure ? payload.attempts : undefined,
+    degraded_mode: providerFailure || Boolean(base.degraded_mode),
+    provider_attempts: providerFailure ? payload.attempts : base.provider_attempts,
   }
 }
 

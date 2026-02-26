@@ -93,6 +93,7 @@ If sponsor APIs are temporarily unavailable, keep the demo flowing with determin
 
 ```bash
 SPONSOR_MOCK_DATA_ENABLED=true
+ORCHESTRATOR_ENABLE_LOCAL_DEMO_FALLBACK=true
 ```
 
 This preserves existing local fallbacks and adds richer mock outputs for Numeric, Tavily, Yutori, Modulate, and Senso tool calls.
