@@ -7,6 +7,9 @@ Pipeline for three jobs:
 3. Load entities into Neo4j AuraDB and run GraphRAG with AWS Bedrock embeddings.
 4. Run an OpenAI orchestrator agent with tool access to GraphRAG and Senso context.
 
+Detailed phase-by-phase documentation:
+- `docs/phased_tool_and_api_guide.md`
+
 ## Project Layout
 
 ```text
@@ -28,6 +31,10 @@ airbyte-synthetic-data-pipeline/
       graphrag.py
     guardrails/
       fastino.py
+    finance/
+      variance_client.py
+    web_navigation/
+      navigator_client.py
     orchestrator/
       config.py
       tools.py
@@ -141,12 +148,17 @@ Default behavior:
 - Gemini is an automatic backup if OpenAI fails (for example quota/rate limits)
 - Fastino guardrails redact sensitive values before provider calls
 - Fastino guardrails check each tool action and block high-risk operations
+- Yutori web navigation fetches latest internal portal PDF evidence when DB context is missing
+- Yutori gracefully falls back to local system-of-record summary when web credentials are unavailable
+- Numeric variance analysis classifies revenue dips as seasonal vs anomaly with CFO-style explanation
 
 The orchestrator uses function tools:
 
 - `query_graph_connections`: runs GraphRAG on Neo4j + Bedrock
 - `get_senso_content`: fetches verified context by Senso content id
 - `get_latest_system_record_entries`: reads local manifest/context previews for grounding
+- `fetch_portal_report_with_web_navigation`: logs into internal portal and extracts latest PDF report evidence
+- `analyze_revenue_variance`: asks finance variance analysis if revenue dip is seasonal or anomalous
 
 Expected final output is structured JSON with:
 
@@ -178,8 +190,24 @@ Expected final output is structured JSON with:
    - `FASTINO_PII_THRESHOLD=0.35`
    - `FASTINO_ACTION_THRESHOLD=0.5`
    - `FASTINO_FAIL_MODE=open`
-10. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
-11. Run `run-diagnostic-orchestrator`.
+10. Create a Yutori API key and add:
+   - `YUTORI_API_KEY=...`
+11. Keep Yutori defaults (or tune):
+   - `YUTORI_BASE_URL=https://api.yutori.com`
+   - `YUTORI_POLL_SECONDS=3`
+   - `YUTORI_TASK_TIMEOUT_SECONDS=180`
+   - `YUTORI_HTTP_TIMEOUT_SECONDS=30`
+   - `YUTORI_MAX_STEPS=75`
+12. Create a Numeric API key and add:
+   - `NUMERIC_API_KEY=...`
+13. Keep Numeric defaults (or tune):
+   - `NUMERIC_BASE_URL=https://api.numeric.io`
+   - `NUMERIC_VARIANCE_PATH=/v1/variance/analysis`
+   - `NUMERIC_TIMEOUT_SECONDS=20`
+   - `NUMERIC_MATERIALITY_THRESHOLD_PCT=0.1`
+   - `NUMERIC_FALLBACK_ENABLED=true`
+14. Ensure GraphRAG and Senso credentials are configured if you want those tools active.
+15. Run `run-diagnostic-orchestrator`.
 
 ## Optional Senso Publish
 
@@ -200,3 +228,5 @@ build-agent-context \
 - Neo4j/AWS: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `NEO4J_DATABASE`, `NEO4J_VECTOR_INDEX`, `AWS_REGION`, `BEDROCK_EMBEDDING_MODEL_ID`
 - Orchestrator/LLM: `ORCHESTRATOR_PRIMARY_PROVIDER`, `ORCHESTRATOR_ENABLE_GEMINI_FALLBACK`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_MAX_TOOL_ROUNDS`, `GEMINI_API_KEY`, `GEMINI_MODEL`
 - Fastino Guardrails: `FASTINO_API_KEY`, `FASTINO_BASE_URL`, `FASTINO_GUARDRAILS_ENABLED`, `FASTINO_PII_THRESHOLD`, `FASTINO_ACTION_THRESHOLD`, `FASTINO_TIMEOUT_SECONDS`, `FASTINO_FAIL_MODE`
+- Yutori Web Navigation: `YUTORI_API_KEY`, `YUTORI_BASE_URL`, `YUTORI_POLL_SECONDS`, `YUTORI_TASK_TIMEOUT_SECONDS`, `YUTORI_HTTP_TIMEOUT_SECONDS`, `YUTORI_MAX_STEPS`
+- Numeric Finance: `NUMERIC_API_KEY`, `NUMERIC_BASE_URL`, `NUMERIC_VARIANCE_PATH`, `NUMERIC_TIMEOUT_SECONDS`, `NUMERIC_MATERIALITY_THRESHOLD_PCT`, `NUMERIC_FALLBACK_ENABLED`

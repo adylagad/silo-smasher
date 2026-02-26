@@ -21,6 +21,8 @@ Operating rules:
 2. Use tools to test hypotheses with evidence.
 3. Prefer grounded tool outputs over assumptions.
 4. Return a concise executive brief.
+5. If graph/system evidence is missing, use web navigation to retrieve the latest internal PDF report.
+6. When revenue declines, use finance variance analysis to classify seasonal dip vs accounting anomaly.
 
 Final answer JSON schema:
 {

@@ -5,9 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
+from airbyte_synthetic_data_pipeline.finance import RevenueVarianceClient
 from airbyte_synthetic_data_pipeline.graph import GraphRAGService, GraphSettings, Neo4jGraphStore
 from airbyte_synthetic_data_pipeline.graph.bedrock_embedder import BedrockEmbedder
 from airbyte_synthetic_data_pipeline.senso.client import SensoClient, SensoConfig
+from airbyte_synthetic_data_pipeline.web_navigation import NavigatorClient
 
 
 ToolHandler = Callable[[dict[str, Any]], dict[str, Any]]
@@ -26,6 +28,8 @@ class DiagnosticToolRuntime:
         self._graph_store: Neo4jGraphStore | None = None
         self._graph_service: GraphRAGService | None = None
         self._senso_client: SensoClient | None = None
+        self._navigator_client: NavigatorClient | None = None
+        self._revenue_variance_client: RevenueVarianceClient | None = None
         self._tool_map: dict[str, ToolSpec] = {}
         self._init_tools()
 
@@ -107,6 +111,48 @@ class DiagnosticToolRuntime:
                 },
                 handler=self._get_latest_system_record_entries,
             ),
+            "fetch_portal_report_with_web_navigation": ToolSpec(
+                name="fetch_portal_report_with_web_navigation",
+                description=(
+                    "Use browser automation to log into an internal portal, find the latest PDF "
+                    "report, and extract evidence when DB evidence is missing."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "portal_url": {"type": "string"},
+                        "report_hint": {"type": "string"},
+                        "task_prompt": {"type": "string"},
+                        "require_auth": {"type": "boolean"},
+                        "max_steps": {"type": "integer", "minimum": 10, "maximum": 150},
+                        "timeout_seconds": {"type": "integer", "minimum": 30, "maximum": 1200},
+                    },
+                    "required": ["portal_url"],
+                    "additionalProperties": False,
+                },
+                handler=self._fetch_portal_report_with_web_navigation,
+            ),
+            "analyze_revenue_variance": ToolSpec(
+                name="analyze_revenue_variance",
+                description=(
+                    "Analyze revenue dip and determine whether it is seasonal or a potential "
+                    "accounting anomaly with CFO-level explanation."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "current_revenue": {"type": "number"},
+                        "prior_revenue": {"type": "number"},
+                        "period_label": {"type": "string"},
+                        "region": {"type": "string"},
+                        "historical_change_pct": {"type": "number"},
+                        "notes": {"type": "string"},
+                    },
+                    "required": ["current_revenue", "prior_revenue"],
+                    "additionalProperties": False,
+                },
+                handler=self._analyze_revenue_variance,
+            ),
         }
 
     def _ensure_graph_service(self) -> GraphRAGService:
@@ -129,6 +175,18 @@ class DiagnosticToolRuntime:
         senso_settings = SensoConfig.from_env()
         self._senso_client = SensoClient(senso_settings)
         return self._senso_client
+
+    def _ensure_navigator_client(self) -> NavigatorClient:
+        if self._navigator_client:
+            return self._navigator_client
+        self._navigator_client = NavigatorClient.from_env()
+        return self._navigator_client
+
+    def _ensure_revenue_variance_client(self) -> RevenueVarianceClient:
+        if self._revenue_variance_client:
+            return self._revenue_variance_client
+        self._revenue_variance_client = RevenueVarianceClient.from_env()
+        return self._revenue_variance_client
 
     def _query_graph_connections(self, arguments: dict[str, Any]) -> dict[str, Any]:
         question = str(arguments.get("question", "")).strip()
@@ -189,3 +247,58 @@ class DiagnosticToolRuntime:
             parsed.append(entry)
         return {"entries": parsed}
 
+    def _fetch_portal_report_with_web_navigation(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        portal_url = str(arguments.get("portal_url", "")).strip()
+        if not portal_url:
+            return {"error": "portal_url is required"}
+
+        report_hint = str(arguments.get("report_hint", "")).strip() or None
+        task_prompt = str(arguments.get("task_prompt", "")).strip() or None
+        require_auth = bool(arguments.get("require_auth", True))
+        max_steps = int(arguments.get("max_steps", 75))
+        timeout_seconds = int(arguments.get("timeout_seconds", 180))
+
+        navigator = self._ensure_navigator_client()
+        return navigator.fetch_latest_portal_report(
+            portal_url=portal_url,
+            report_hint=report_hint,
+            task_prompt=task_prompt,
+            require_auth=require_auth,
+            max_steps=max_steps,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def _analyze_revenue_variance(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        try:
+            current_revenue = float(arguments.get("current_revenue"))
+            prior_revenue = float(arguments.get("prior_revenue"))
+        except (TypeError, ValueError):
+            return {
+                "error": "current_revenue and prior_revenue must be numeric.",
+                "arguments": arguments,
+            }
+
+        period_label = str(arguments.get("period_label", "")).strip() or None
+        region = str(arguments.get("region", "")).strip() or None
+        notes = str(arguments.get("notes", "")).strip() or None
+
+        historical_change_raw = arguments.get("historical_change_pct")
+        historical_change_pct: float | None = None
+        if historical_change_raw is not None:
+            try:
+                historical_change_pct = float(historical_change_raw)
+            except (TypeError, ValueError):
+                return {
+                    "error": "historical_change_pct must be numeric when provided.",
+                    "arguments": arguments,
+                }
+
+        client = self._ensure_revenue_variance_client()
+        return client.explain_revenue_dip(
+            current_revenue=current_revenue,
+            prior_revenue=prior_revenue,
+            period_label=period_label,
+            region=region,
+            historical_change_pct=historical_change_pct,
+            notes=notes,
+        )
