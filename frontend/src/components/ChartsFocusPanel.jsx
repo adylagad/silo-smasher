@@ -27,20 +27,24 @@ const RANGE_OPTIONS = [
 ]
 
 const TRACK_OPTIONS = [
-  { key: 'mrr', label: 'MRR', color: '#38bdf8', type: 'currency' },
-  { key: 'conversion', label: 'Conversion', color: '#22d3ee', type: 'percent' },
-  { key: 'churn', label: 'Churn', color: '#fb7185', type: 'percent' },
-  { key: 'tickets', label: 'Tickets', color: '#f59e0b', type: 'count' },
+  { key: 'five_xx', label: '500/min', color: '#38bdf8', type: 'count' },
+  { key: 'error_rate', label: 'Error Rate', color: '#fb7185', type: 'percent' },
+  { key: 'p95_latency_ms', label: 'p95 Latency', color: '#22d3ee', type: 'ms' },
+  { key: 'oncall_pages', label: 'Pages', color: '#f59e0b', type: 'count' },
 ]
 
-const REGION_COLORS = ['#38bdf8', '#22c55e', '#f97316']
-
-const fmtCurrency = (value) => `$${(value / 1000).toFixed(0)}K`
+const SOURCE_COLORS = ['#38bdf8', '#22c55e', '#f97316']
 
 const formatValue = (value, type) => {
-  if (type === 'currency') return `$${Number(value).toLocaleString()}`
   if (type === 'percent') return `${Number(value).toFixed(1)}%`
-  return `${value}`
+  if (type === 'ms') return `${Math.round(Number(value))} ms`
+  return `${Number(value).toLocaleString()}`
+}
+
+const tooltipValue = (name, value) => {
+  if (String(name).toLowerCase().includes('error rate')) return `${Number(value).toFixed(1)}%`
+  if (String(name).toLowerCase().includes('latency')) return `${Math.round(Number(value))} ms`
+  return `${Number(value).toLocaleString()}`
 }
 
 const MetricTip = ({ active, payload, label }) => {
@@ -55,7 +59,7 @@ const MetricTip = ({ active, payload, label }) => {
           style={{ color: entry.color }}
         >
           <span>{entry.name}</span>
-          <span className="tabular-nums">{entry.name === 'MRR' ? fmtCurrency(entry.value) : entry.value}</span>
+          <span className="tabular-nums">{tooltipValue(entry.name, entry.value)}</span>
         </div>
       ))}
     </div>
@@ -79,7 +83,7 @@ const CardTitle = ({ icon: Icon, title, subtitle, right }) => (
 
 export default function ChartsFocusPanel() {
   const [weeks, setWeeks] = useState(12)
-  const [track, setTrack] = useState('mrr')
+  const [track, setTrack] = useState('five_xx')
 
   const series = useMemo(() => METRIC_SERIES.slice(-weeks), [weeks])
   const latest = series[series.length - 1]
@@ -87,13 +91,13 @@ export default function ChartsFocusPanel() {
   const selectedTrack = TRACK_OPTIONS.find((option) => option.key === track) ?? TRACK_OPTIONS[0]
   const delta = latest[track] - previous[track]
 
-  const regionShare = useMemo(() => {
-    const total = latest.eu + latest.us + latest.apac
+  const sourceShare = useMemo(() => {
+    const total = latest.api_errors + latest.db_errors + latest.dependency_errors
     if (!total) return []
     return [
-      { name: 'EU', value: Number(((latest.eu / total) * 100).toFixed(1)) },
-      { name: 'US', value: Number(((latest.us / total) * 100).toFixed(1)) },
-      { name: 'APAC', value: Number(((latest.apac / total) * 100).toFixed(1)) },
+      { name: 'API', value: Number(((latest.api_errors / total) * 100).toFixed(1)) },
+      { name: 'Database', value: Number(((latest.db_errors / total) * 100).toFixed(1)) },
+      { name: 'Dependency', value: Number(((latest.dependency_errors / total) * 100).toFixed(1)) },
     ]
   }, [latest])
 
@@ -107,9 +111,9 @@ export default function ChartsFocusPanel() {
           className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4"
         >
           <div>
-            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Dashboard</div>
+            <div className="text-[11px] uppercase tracking-[0.24em] text-slate-400 font-bold">Incident Telemetry</div>
             <h2 className="text-[2rem] md:text-[2.35rem] leading-[1.05] tracking-tight text-white font-extrabold mt-1">
-              Metrics. <span className="gradient-text">Then chat.</span>
+              Signals first. <span className="gradient-text">Then investigate.</span>
             </h2>
           </div>
 
@@ -138,7 +142,7 @@ export default function ChartsFocusPanel() {
         >
           {TRACK_OPTIONS.map((option) => {
             const isActive = track === option.key
-            const directionClass = delta < 0 ? 'text-rose-300' : 'text-emerald-300'
+            const directionClass = delta <= 0 ? 'text-emerald-300' : 'text-rose-300'
             return (
               <button
                 key={option.key}
@@ -155,12 +159,12 @@ export default function ChartsFocusPanel() {
                 </div>
                 {isActive && (
                   <div className={`text-[10px] mt-1 font-bold ${directionClass}`}>
-                    {delta < 0 ? '−' : '+'}
-                    {option.key === 'mrr'
-                      ? `$${(Math.abs(delta) / 1000).toFixed(1)}K`
-                      : option.key === 'tickets'
-                      ? Math.abs(delta)
-                      : `${Math.abs(delta).toFixed(1)} pts`}
+                    {delta <= 0 ? '−' : '+'}
+                    {option.type === 'percent'
+                      ? `${Math.abs(delta).toFixed(1)} pts`
+                      : option.type === 'ms'
+                      ? `${Math.abs(delta).toFixed(0)} ms`
+                      : Math.abs(delta)}
                   </div>
                 )}
               </button>
@@ -189,12 +193,7 @@ export default function ChartsFocusPanel() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" vertical={false} />
               <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fill: '#94a3b8', fontSize: 10 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={track === 'mrr' ? fmtCurrency : undefined}
-              />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
               <Tooltip content={<MetricTip />} />
               <Area
                 type="monotone"
@@ -216,7 +215,7 @@ export default function ChartsFocusPanel() {
             transition={{ duration: 0.35, delay: 0.14 }}
             className="card panel-hover p-4 md:p-5 xl:col-span-2"
           >
-            <CardTitle icon={BarChart3} title="Operating Signals" />
+            <CardTitle icon={BarChart3} title="Runtime Health Signals" />
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={series} margin={{ top: 6, right: 6, left: -18, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
@@ -225,9 +224,9 @@ export default function ChartsFocusPanel() {
                 <YAxis yAxisId="right" orientation="right" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<MetricTip />} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
-                <Line yAxisId="left" dataKey="conversion" name="Conversion %" stroke="#22d3ee" strokeWidth={2.2} dot={false} />
-                <Line yAxisId="left" dataKey="churn" name="Churn %" stroke="#fb7185" strokeWidth={2.2} dot={false} />
-                <Line yAxisId="right" dataKey="tickets" name="Tickets" stroke="#f59e0b" strokeWidth={2.2} dot={false} />
+                <Line yAxisId="left" dataKey="error_rate" name="Error Rate %" stroke="#fb7185" strokeWidth={2.2} dot={false} />
+                <Line yAxisId="right" dataKey="p95_latency_ms" name="p95 Latency (ms)" stroke="#22d3ee" strokeWidth={2.2} dot={false} />
+                <Line yAxisId="left" dataKey="oncall_pages" name="On-call Pages" stroke="#f59e0b" strokeWidth={2.2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </motion.div>
@@ -238,12 +237,12 @@ export default function ChartsFocusPanel() {
             transition={{ duration: 0.35, delay: 0.16 }}
             className="card panel-hover p-4 md:p-5"
           >
-            <CardTitle icon={PieChartIcon} title="Regional Mix" subtitle={latest.week} />
+            <CardTitle icon={PieChartIcon} title="Error Source Mix" subtitle={latest.week} />
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
-                <Pie data={regionShare} cx="50%" cy="50%" dataKey="value" innerRadius={48} outerRadius={76} paddingAngle={3}>
-                  {regionShare.map((entry, index) => (
-                    <Cell key={entry.name} fill={REGION_COLORS[index % REGION_COLORS.length]} />
+                <Pie data={sourceShare} cx="50%" cy="50%" dataKey="value" innerRadius={48} outerRadius={76} paddingAngle={3}>
+                  {sourceShare.map((entry, index) => (
+                    <Cell key={entry.name} fill={SOURCE_COLORS[index % SOURCE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(value) => `${value}%`} />
@@ -251,10 +250,10 @@ export default function ChartsFocusPanel() {
               </PieChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-3 gap-2 mt-2.5">
-              {regionShare.map((entry, index) => (
+              {sourceShare.map((entry, index) => (
                 <div key={entry.name} className="rounded-xl border border-slate-300/20 bg-[#0a1726] px-2 py-1.5 text-center">
                   <div className="text-[9px] text-slate-400 uppercase tracking-widest font-bold">{entry.name}</div>
-                  <div className="text-[12px] font-bold mt-0.5" style={{ color: REGION_COLORS[index % REGION_COLORS.length] }}>
+                  <div className="text-[12px] font-bold mt-0.5" style={{ color: SOURCE_COLORS[index % SOURCE_COLORS.length] }}>
                     {entry.value}%
                   </div>
                 </div>
@@ -270,30 +269,30 @@ export default function ChartsFocusPanel() {
           className="grid grid-cols-1 lg:grid-cols-3 gap-4"
         >
           <div className="card panel-hover p-4 md:p-5 lg:col-span-2">
-            <CardTitle icon={Radar} title="Revenue by Region" />
+            <CardTitle icon={Radar} title="Error Volume by Subsystem" />
             <ResponsiveContainer width="100%" height={230}>
               <BarChart data={series} margin={{ top: 8, right: 4, left: -14, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.16)" vertical={false} />
                 <XAxis dataKey="week" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={fmtCurrency} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<MetricTip />} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
-                <Bar dataKey="eu" name="EU" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="us" name="US" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="apac" name="APAC" fill="#f97316" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="api_errors" name="API" fill="#38bdf8" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="db_errors" name="Database" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="dependency_errors" name="Dependency" fill="#f97316" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           <div className="card panel-hover p-4 md:p-5 flex flex-col justify-between">
-            <CardTitle icon={Activity} title="Anomaly Note" />
+            <CardTitle icon={Activity} title="Incident Note" />
             <div className="rounded-xl border border-rose-300/20 bg-rose-400/10 px-3 py-3">
               <div className="text-[11px] uppercase tracking-wider text-rose-200/80 font-bold">Signal</div>
-              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">MRR down. Churn up. Tickets up.</div>
+              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">HTTP 500 up sharply after deploy. p95 latency and pages increased.</div>
             </div>
             <div className="rounded-xl border border-sky-300/20 bg-sky-400/10 px-3 py-3 mt-3">
               <div className="text-[11px] uppercase tracking-wider text-sky-200/90 font-bold">Action</div>
-              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">Open chat.</div>
+              <div className="text-[12px] leading-relaxed text-slate-100 mt-1">Open chat to generate root cause + mitigation + PR draft.</div>
             </div>
           </div>
         </motion.div>

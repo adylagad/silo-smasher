@@ -1,0 +1,109 @@
+{
+  "scenario_id": "checkout_500_after_deploy",
+  "default_question": "Checkout API is returning HTTP 500 and paging on-call. Find the root cause, propose a fix, and draft a proactive incident update.",
+  "service": {
+    "name": "checkout-api",
+    "owner_team": "payments-platform",
+    "environment": "production",
+    "region": "us-east-1",
+    "endpoint": "/v1/checkout/confirm"
+  },
+  "timeline": [
+    {
+      "timestamp": "2026-02-27T09:06:00Z",
+      "event": "Deploy started",
+      "detail": "deploy_id dep_20260227_0906 rolled out to 100% traffic in us-east-1."
+    },
+    {
+      "timestamp": "2026-02-27T09:12:00Z",
+      "event": "Error spike detected",
+      "detail": "HTTP 500 rate crossed 15% in checkout confirm endpoint."
+    },
+    {
+      "timestamp": "2026-02-27T09:16:00Z",
+      "event": "On-call paged",
+      "detail": "PagerDuty incident INC-5142 created for payments-platform."
+    }
+  ],
+  "metrics": {
+    "error_rate_before_pct": 0.4,
+    "error_rate_after_pct": 18.7,
+    "p95_latency_before_ms": 210,
+    "p95_latency_after_ms": 1380,
+    "requests_per_minute": 3120,
+    "failed_requests_per_minute": 583
+  },
+  "deploy": {
+    "deploy_id": "dep_20260227_0906",
+    "commit_sha": "9f3c1b7",
+    "author": "anika.rao",
+    "summary": "Enable compact checkout response serializer"
+  },
+  "log_excerpt": [
+    "2026-02-27T09:11:58.441Z ERROR checkout-api req_id=bc2ff1 status=500 path=/v1/checkout/confirm NullPointerException: cannot read property currency_code of None",
+    "2026-02-27T09:11:58.447Z ERROR checkout-api req_id=bc2ff1 trace=2fd7 serializer.checkout_response line=214",
+    "2026-02-27T09:12:02.881Z ERROR checkout-api req_id=81a91a status=500 path=/v1/checkout/confirm NullPointerException: cannot read property currency_code of None",
+    "2026-02-27T09:12:03.110Z WARN checkout-api req_id=81a91a feature_flag=compact_serializer enabled=true",
+    "2026-02-27T09:12:07.229Z ERROR checkout-api req_id=53de40 status=500 path=/v1/checkout/confirm NullPointerException: cannot read property currency_code of None",
+    "2026-02-27T09:12:13.056Z INFO checkout-api req_id=d13f91 fallback=legacy_serializer skipped because compact_serializer is mandatory"
+  ],
+  "trace_evidence": [
+    {
+      "trace_id": "2fd7e8b0a914",
+      "span": "checkout_response_serializer",
+      "observation": "Null dereference when optional billing currency metadata is missing."
+    },
+    {
+      "trace_id": "11ac2e0cd0f1",
+      "span": "feature_flag_eval",
+      "observation": "compact_serializer enabled for 100% traffic; no gradual rollout."
+    },
+    {
+      "trace_id": "8d0f1c4e9bb3",
+      "span": "db.lookup.customer_profile",
+      "observation": "DB latency normal; no saturation detected."
+    }
+  ],
+  "infra_events": [
+    {
+      "source": "aws_status",
+      "timestamp": "2026-02-27T09:18:00Z",
+      "severity": "advisory",
+      "detail": "No regional AWS outage reported in us-east-1 during incident window."
+    },
+    {
+      "source": "cdn_status",
+      "timestamp": "2026-02-27T09:19:00Z",
+      "severity": "ok",
+      "detail": "Edge network latency stable; no global incident."
+    }
+  ],
+  "analysis": {
+    "primary_cause": "Deploy dep_20260227_0906 introduced a null dereference in compact checkout serializer when currency metadata is absent.",
+    "contributing_factors": [
+      "Feature flag enabled at 100% without canary.",
+      "Fallback to legacy serializer disabled."
+    ],
+    "confidence": 0.93
+  },
+  "proposed_pr": {
+    "branch": "auto/fix-checkout-null-currency",
+    "title": "Guard optional currency metadata in compact serializer and restore safe fallback",
+    "files": [
+      "services/checkout/serializer.py",
+      "services/checkout/feature_flags.py",
+      "tests/checkout/test_serializer.py"
+    ],
+    "diff_summary": [
+      "Add null-safe handling when billing currency metadata is missing.",
+      "Re-enable legacy serializer fallback when compact serializer throws.",
+      "Add regression tests for missing currency metadata path."
+    ],
+    "validation_steps": [
+      "Run checkout serializer unit tests.",
+      "Replay failing payload fixtures from logs.",
+      "Canary at 5% before full rollout."
+    ]
+  },
+  "proactive_message_template": "Incident update: checkout-api 500 spike traced to deploy dep_20260227_0906 (serializer null dereference). Mitigation in progress: fallback restored and hotfix PR prepared. Customer impact: elevated checkout failures in us-east-1 since 09:12 UTC."
+}

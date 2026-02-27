@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 
-DEFAULT_INTERNAL_SIGNALS_PATH = Path("data/internal_signals/slack_messages.json")
+DEFAULT_INTERNAL_SIGNALS_PATH = Path("data/internal_signals/incident_war_room_messages.json")
 
 
 @dataclass

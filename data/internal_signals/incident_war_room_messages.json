@@ -1,0 +1,56 @@
+[
+  {
+    "id": "war-001",
+    "source": "slack",
+    "channel": "eng-incidents",
+    "user": "oncall.jules",
+    "timestamp": "2026-02-27T09:12:20Z",
+    "text": "INC-5142 opened. checkout-api returning 500 on /v1/checkout/confirm right after deploy dep_20260227_0906.",
+    "tags": ["incident", "checkout", "500", "deploy", "sev1"]
+  },
+  {
+    "id": "war-002",
+    "source": "slack",
+    "channel": "payments-platform",
+    "user": "anika.rao",
+    "timestamp": "2026-02-27T09:13:07Z",
+    "text": "I shipped compact serializer in 9f3c1b7. Could be null handling around currency metadata.",
+    "tags": ["deploy", "serializer", "commit", "9f3c1b7"]
+  },
+  {
+    "id": "war-003",
+    "source": "jira",
+    "channel": "jira-incidents",
+    "user": "incident-bot",
+    "timestamp": "2026-02-27T09:13:31Z",
+    "text": "INC-5142 note: stack traces point to serializer.checkout_response line 214.",
+    "tags": ["stacktrace", "serializer", "checkout", "sev1"]
+  },
+  {
+    "id": "war-004",
+    "source": "slack",
+    "channel": "sre-core",
+    "user": "sre.marta",
+    "timestamp": "2026-02-27T09:14:12Z",
+    "text": "AWS status clean in us-east-1. This looks application-level, not cloud outage.",
+    "tags": ["aws", "status", "application", "triage"]
+  },
+  {
+    "id": "war-005",
+    "source": "slack",
+    "channel": "eng-incidents",
+    "user": "oncall.jules",
+    "timestamp": "2026-02-27T09:15:02Z",
+    "text": "Temporary mitigation: force legacy serializer fallback via feature flag while hotfix is prepared.",
+    "tags": ["mitigation", "feature-flag", "rollback", "fallback"]
+  },
+  {
+    "id": "war-006",
+    "source": "slack",
+    "channel": "support-escalations",
+    "user": "support.lead",
+    "timestamp": "2026-02-27T09:16:10Z",
+    "text": "Support reports checkout failures from enterprise accounts in us-east-1. Need ETA for customer update.",
+    "tags": ["support", "customer-impact", "incident-comms"]
+  }
+]

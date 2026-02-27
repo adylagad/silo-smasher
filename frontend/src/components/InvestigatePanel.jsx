@@ -193,17 +193,37 @@ const normalizeDiagnosticResult = (payload) => {
 const EvidencePanel = ({ toolOutputs }) => {
   if (!toolOutputs || typeof toolOutputs !== 'object') return null
 
+  const incidentContext =
+    toolOutputs?.incident_context && typeof toolOutputs.incident_context === 'object'
+      ? toolOutputs.incident_context
+      : null
   const sqlStatusRows = Array.isArray(toolOutputs?.sql_status?.rows)
     ? toolOutputs.sql_status.rows
-    : []
-  const sqlRevenueRows = Array.isArray(toolOutputs?.sql_revenue?.rows)
-    ? toolOutputs.sql_revenue.rows
     : []
   const internalRows = Array.isArray(toolOutputs?.internal_signals?.results)
     ? toolOutputs.internal_signals.results
     : []
 
-  if (!sqlStatusRows.length && !sqlRevenueRows.length && !internalRows.length) return null
+  if (!incidentContext && !sqlStatusRows.length && !internalRows.length) return null
+
+  const service = incidentContext?.service && typeof incidentContext.service === 'object'
+    ? incidentContext.service
+    : {}
+  const deploy = incidentContext?.deploy && typeof incidentContext.deploy === 'object'
+    ? incidentContext.deploy
+    : {}
+  const metrics = incidentContext?.metrics && typeof incidentContext.metrics === 'object'
+    ? incidentContext.metrics
+    : {}
+  const analysis = incidentContext?.analysis && typeof incidentContext.analysis === 'object'
+    ? incidentContext.analysis
+    : {}
+  const logLines = Array.isArray(incidentContext?.log_excerpt)
+    ? incidentContext.log_excerpt.slice(0, 2)
+    : []
+  const infraEvents = Array.isArray(incidentContext?.infra_events)
+    ? incidentContext.infra_events.slice(0, 1)
+    : []
 
   const statusMap = {}
   for (const row of sqlStatusRows) {
@@ -212,7 +232,6 @@ const EvidencePanel = ({ toolOutputs }) => {
     if (!key) continue
     statusMap[key] = row.event_count ?? row.count ?? 0
   }
-  const topRegion = sqlRevenueRows[0] && typeof sqlRevenueRows[0] === 'object' ? sqlRevenueRows[0] : null
 
   return (
     <motion.div
@@ -228,23 +247,55 @@ const EvidencePanel = ({ toolOutputs }) => {
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
-          <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">SQL</div>
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {['purchased', 'returned', 'carted'].map((key) => (
-              <span key={key} className="text-[10px] px-2 py-1 rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-300">
-                {key}: {statusMap[key] ?? 0}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {incidentContext && (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+            <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Incident Snapshot</div>
+            <div className="text-[11px] text-zinc-200 font-semibold">
+              {service.name || 'service'} · {service.environment || 'env'}
+            </div>
+            <div className="text-[11px] text-zinc-400 mt-1">
+              Endpoint: <span className="text-zinc-200">{service.endpoint || 'n/a'}</span>
+            </div>
+            <div className="text-[11px] text-zinc-400">
+              Deploy: <span className="text-zinc-200">{deploy.deploy_id || 'n/a'}</span>
+            </div>
+            <div className="text-[11px] text-zinc-400">
+              Commit: <span className="text-zinc-200">{deploy.commit_sha || 'n/a'}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span className="text-[10px] px-2 py-1 rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-300">
+                500 rate: {metrics.error_rate_after_pct ?? 'n/a'}%
               </span>
-            ))}
+              <span className="text-[10px] px-2 py-1 rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-300">
+                p95: {metrics.p95_latency_after_ms ?? 'n/a'} ms
+              </span>
+            </div>
           </div>
-          {topRegion && (
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Top region: <span className="text-zinc-200">{String(topRegion.country_code || 'n/a')}</span>{' '}
-              ({topRegion.purchased_revenue ?? 0} revenue)
-            </p>
-          )}
-        </div>
+        )}
+
+        {incidentContext && (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+            <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Logs + Status</div>
+            <div className="flex flex-col gap-2">
+              {logLines.map((line, index) => (
+                <div key={`log-${index}`} className="text-[11px] text-zinc-300 leading-relaxed line-clamp-2">
+                  {line}
+                </div>
+              ))}
+              {infraEvents[0] && (
+                <div className="text-[11px] text-zinc-400 leading-relaxed">
+                  Cloud: {infraEvents[0].detail || 'No provider incident event found.'}
+                </div>
+              )}
+              {analysis.primary_cause && (
+                <div className="text-[11px] text-emerald-300 leading-relaxed">
+                  Likely cause: {analysis.primary_cause}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
           <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Internal Signals</div>
@@ -262,6 +313,19 @@ const EvidencePanel = ({ toolOutputs }) => {
             )}
           </div>
         </div>
+
+        {!!sqlStatusRows.length && (
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3">
+            <div className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Structured Probe</div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.keys(statusMap).slice(0, 4).map((key) => (
+                <span key={key} className="text-[10px] px-2 py-1 rounded-md border border-white/[0.08] bg-white/[0.03] text-zinc-300">
+                  {key}: {statusMap[key]}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   )
@@ -362,9 +426,9 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.12 }}
             >
-              What changed?
+              What failed?
             </motion.h1>
-            <div className="mb-8 text-[12px] text-zinc-500">Ask a question to start.</div>
+            <div className="mb-8 text-[12px] text-zinc-500">Describe the incident to start triage.</div>
 
             {/* Command input */}
             <motion.div
@@ -387,7 +451,7 @@ export default function InvestigatePanel({ initialQuery = '', autoRunSignal = 0 
                         runQuery()
                       }
                     }}
-                    placeholder="MRR is down 15% this week. Why?"
+                    placeholder="Checkout API returns HTTP 500 after deploy. What changed?"
                     className="flex-1 bg-transparent resize-none text-sm text-zinc-200 placeholder:text-zinc-600/60 focus:outline-none leading-relaxed"
                     autoFocus
                   />

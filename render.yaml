@@ -33,9 +33,11 @@ services:
       - key: STRUCTURED_QUERY_MAX_ROWS_LIMIT
         value: "500"
       - key: INTERNAL_SIGNALS_PATH
-        value: data/internal_signals/slack_messages.json
+        value: data/internal_signals/incident_war_room_messages.json
       - key: INTERNAL_SIGNALS_DEFAULT_MAX_RESULTS
         value: "5"
+      - key: INCIDENT_CONTEXT_PATH
+        value: data/incident/http_500_after_deploy.json
 
       # ── Neo4j GraphRAG ────────────────────────────────────────────────────
       - key: NEO4J_URI

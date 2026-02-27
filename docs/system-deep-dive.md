@@ -2,28 +2,28 @@
 
 ## 1. What This Tool Actually Does
 
-Silo Smasher is an **agentic diagnostic system** for business metrics.
+Silo Smasher is an **agentic incident-response system** for engineering and support teams.
 
 It is built to answer:
-- "Why did this metric change?"
+- "Why did this service degrade?"
 
 Not just:
-- "What is the metric value?"
+- "What is the current alert state?"
 
 At runtime, it combines multiple evidence sources:
 - Structured events and aggregations (SQL over normalized data)
 - Relationship context (Neo4j GraphRAG)
-- Internal unstructured signals (currently local Slack/Jira-style dataset)
-- External world signals (news/economic context)
-- Finance classification (seasonal dip vs anomaly)
+- Internal incident signals (local Slack/Jira war-room style dataset)
+- External world/provider signals (cloud/vendor status context)
+- Risk classification support
 - Optional voice intent/stress handling
 
 The output is a structured diagnostic brief with:
-- metric summary
+- incident summary
 - hypotheses + support/reject status
 - confidence
 - root-cause recommendation
-- next queries/actions
+- mitigation actions and next queries
 
 ## 2. High-Level Architecture
 
@@ -154,51 +154,56 @@ This is why the system can still demo even when API keys/quota are unavailable.
 
 Registered tool set lives in `DiagnosticToolRuntime`.
 
-### 6.1 `run_sql_query`
+### 6.1 `get_incident_context_snapshot`
+- Loads deterministic incident context from local JSON (`INCIDENT_CONTEXT_PATH`).
+- Returns service metadata, deploy info, log excerpts, trace evidence, infra/provider events, and proposed PR details.
+- Used heavily in fallback/demo mode to emulate real on-call evidence collection.
+
+### 6.2 `run_sql_query`
 - Executes read-only SQL against SQLite.
 - Blocks write operations (`INSERT/UPDATE/DELETE/DROP/...`).
 - Limits rows.
 - Uses normalized local commerce tables (`users`, `products`, `purchases`, `purchase_events_enriched`).
 
-### 6.2 `query_graph_connections`
+### 6.3 `query_graph_connections`
 - Embeds question text with Bedrock.
 - Finds nearest retrievable nodes in Neo4j vector index.
 - Expands local graph paths and renders "why connected" edges.
 - Also returns customer→order→ticket link chains when available.
 - If graph unavailable, falls back to latest local system-of-record manifest/context preview.
 
-### 6.3 `get_senso_content`
+### 6.4 `get_senso_content`
 - Fetches verified content by content id from Senso.
 - On failure (missing key/API error), falls back to local latest context and optional mock payload.
 
-### 6.4 `get_latest_system_record_entries`
+### 6.5 `get_latest_system_record_entries`
 - Reads local `manifest.jsonl` entries.
 - Optionally includes mini context preview (record counts + metrics).
 
-### 6.5 `fetch_portal_report_with_web_navigation` (Yutori)
+### 6.6 `fetch_portal_report_with_web_navigation` (Yutori)
 - Creates browser automation task to inspect internal portal.
 - Polls until completed/failed/timeout.
 - Returns task result payload.
 - If unavailable: returns local context summary fallback and optional mock payload.
 
-### 6.6 `analyze_revenue_variance` (Numeric)
+### 6.7 `analyze_revenue_variance` (Numeric)
 - Sends current/prior revenue and optional context.
 - Returns classification + CFO-style explanation.
 - Fallback heuristic classifies by materiality and baseline trend.
 - Optional deterministic mock payload overlays fallback.
 
-### 6.7 `search_external_economic_news` (Tavily)
+### 6.8 `search_external_economic_news` (Tavily)
 - Runs external news/economic search with time-window mapping.
 - Normalizes answer + result list.
 - On failure: returns local fallback suggestion list and optional mock results.
 
-### 6.8 `search_internal_communications`
-- Searches local JSON messages (`data/internal_signals/slack_messages.json`).
+### 6.9 `search_internal_communications`
+- Searches local JSON messages (`data/internal_signals/incident_war_room_messages.json`).
 - Keyword scoring with incident-term boosts.
 - Supports channel filter and lookback window.
 - Returns matched messages + follow-up suggestions.
 
-### 6.9 `analyze_voice_command_mode` (Modulate)
+### 6.10 `analyze_voice_command_mode` (Modulate)
 - Detects intent/emotion/stress and picks summary vs deep-dive mode.
 - Falls back to local heuristic when API unavailable.
 - Optional mock response included when mock mode is enabled.

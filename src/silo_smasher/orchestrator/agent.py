@@ -13,20 +13,20 @@ from .tools import DiagnosticToolRuntime
 
 
 SYSTEM_PROMPT = """
-You are the Diagnostic Data Explorer orchestrator.
-Goal: explain why a business metric changed, not only what changed.
+You are an Autonomous Incident Engineer for software and support teams.
+Goal: explain why a production service degraded and recommend the fastest safe mitigation.
 
 Operating rules:
 1. Generate 2-4 plausible hypotheses first.
 2. Use tools to test hypotheses with evidence.
 3. Prefer grounded tool outputs over assumptions.
-4. Return a concise executive brief.
-5. If graph/system evidence is missing, use web navigation to retrieve the latest internal PDF report.
-6. When revenue declines, use finance variance analysis to classify seasonal dip vs accounting anomaly.
-7. If finance analysis indicates regional decline (for example Japan), search external economic news in the last 24 hours.
-8. In voice-command mode, analyze user emotion/intent and prioritize summary mode when stress is detected.
-9. Use run_sql_query to test hypotheses against structured users/products/purchases data before final conclusions.
-10. When investigating product or operational issues, use search_internal_communications to correlate internal incident chatter with metric drops.
+4. Use get_incident_context_snapshot for logs, deploy metadata, traces, infra events, and proposed PR context.
+5. Correlate internal incident chatter with search_internal_communications.
+6. Use run_sql_query for read-only validation when structured event data is available.
+7. Check external status signals for cloud/vendor incidents before assigning root cause.
+8. Return a concise incident brief with impact, root cause, mitigation, and next actions.
+9. If no internal evidence is available, use web navigation for latest internal incident reports.
+10. In voice-command mode, prioritize summary mode when stress is detected.
 
 Final answer JSON schema:
 {
@@ -374,84 +374,69 @@ class DiagnosticOrchestrator:
         question: str,
         attempts: list[dict[str, Any]],
     ) -> dict[str, Any]:
-        sql_status = runtime.call(
-            "run_sql_query",
+        incident_context = runtime.call(
+            "get_incident_context_snapshot",
             {
-                "sql": (
-                    "SELECT status, COUNT(*) AS event_count "
-                    "FROM purchases "
-                    "GROUP BY status "
-                    "ORDER BY event_count DESC"
-                ),
-                "max_rows": 10,
-            },
-        )
-        sql_revenue = runtime.call(
-            "run_sql_query",
-            {
-                "sql": (
-                    "SELECT u.country_code AS country_code, "
-                    "ROUND(SUM(CASE WHEN p.status = 'purchased' THEN pr.price ELSE 0 END), 2) AS purchased_revenue, "
-                    "COUNT(*) AS event_count "
-                    "FROM purchases p "
-                    "LEFT JOIN users u ON u.id = p.user_id "
-                    "LEFT JOIN products pr ON pr.id = p.product_id "
-                    "GROUP BY u.country_code "
-                    "ORDER BY purchased_revenue DESC"
-                ),
-                "max_rows": 10,
+                "include_logs": True,
+                "max_log_lines": 8,
+                "include_cloud_events": True,
             },
         )
         internal_signals = runtime.call(
             "search_internal_communications",
             {
-                "query": f"{question} checkout payment bug release incident",
-                "hours_back": 240,
+                "query": f"{question} http 500 deploy rollback stacktrace incident",
+                "hours_back": 72,
                 "max_results": 6,
-            },
-        )
-        variance = runtime.call(
-            "analyze_revenue_variance",
-            {
-                "current_revenue": 84500,
-                "prior_revenue": 96200,
-                "period_label": "Current Week vs Prior Week",
-                "region": "UK",
-                "historical_change_pct": -0.04,
-                "notes": "Local demo fallback using synthetic structured and internal signals.",
             },
         )
         external_news = runtime.call(
             "search_external_economic_news",
             {
-                "country": "UK",
-                "query": "UK logistics disruption and checkout outage news in the last 24 hours",
+                "country": "United States",
+                "query": "AWS us-east-1 outage and payment API incidents in the last 24 hours",
                 "hours_back": 24,
                 "max_results": 5,
             },
         )
-        graph_context = runtime.call(
-            "query_graph_connections",
-            {
-                "question": question,
-                "top_k": 3,
-                "max_hops": 2,
-            },
-        )
+        graph_context = {
+            "source": "skipped_in_local_demo",
+            "message": "Graph query skipped in deterministic local demo mode to avoid external dependency noise.",
+        }
         local_context = runtime.call(
             "get_latest_system_record_entries",
             {"count": 1, "include_context_preview": True},
         )
-
-        status_rows = sql_status.get("rows", []) if isinstance(sql_status, dict) else []
-        status_map: dict[str, int] = {}
-        for row in status_rows:
-            if not isinstance(row, dict):
-                continue
-            key = str(row.get("status", "")).strip().lower()
-            value = row.get("event_count")
-            if key and isinstance(value, (int, float)):
-                status_map[key] = int(value)
+        incident_service = (
+            incident_context.get("service", {})
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("service"), dict)
+            else {}
+        )
+        incident_deploy = (
+            incident_context.get("deploy", {})
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("deploy"), dict)
+            else {}
+        )
+        incident_analysis = (
+            incident_context.get("analysis", {})
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("analysis"), dict)
+            else {}
+        )
+        incident_pr = (
+            incident_context.get("proposed_pr", {})
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("proposed_pr"), dict)
+            else {}
+        )
+        incident_logs = (
+            incident_context.get("log_excerpt", [])
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("log_excerpt"), list)
+            else []
+        )
+        infra_events = (
+            incident_context.get("infra_events", [])
+            if isinstance(incident_context, dict) and isinstance(incident_context.get("infra_events"), list)
+            else []
+        )
 
         internal_results = (
             internal_signals.get("results", [])
@@ -476,42 +461,53 @@ class DiagnosticOrchestrator:
             if isinstance(top_external, dict)
             else ""
         )
+        root_cause_text = str(incident_analysis.get("primary_cause", "")).strip()
+        confidence_value = incident_analysis.get("confidence")
+        confidence_overall = (
+            float(confidence_value)
+            if isinstance(confidence_value, (int, float))
+            else 0.87
+        )
 
-        variance_classification = (
-            str(variance.get("classification", "")).strip().lower()
-            if isinstance(variance, dict)
+        deploy_id = str(incident_deploy.get("deploy_id", "unknown_deploy")).strip()
+        commit_sha = str(incident_deploy.get("commit_sha", "unknown_commit")).strip()
+        service_name = str(incident_service.get("name", "unknown_service")).strip()
+        endpoint = str(incident_service.get("endpoint", "unknown_endpoint")).strip()
+        top_log_line = str(incident_logs[0]).strip() if incident_logs else ""
+        top_infra_detail = (
+            str(infra_events[0].get("detail", "")).strip()
+            if infra_events and isinstance(infra_events[0], dict)
             else ""
         )
-        likely_anomaly = variance_classification in {
-            "accounting_anomaly_likely",
-            "operational_anomaly_likely",
-        }
-
-        hypothesis_checkout_status = "supported" if internal_results else "inconclusive"
-        hypothesis_checkout_confidence = 0.88 if internal_results else 0.42
-        hypothesis_external_status = "supported" if external_results else "inconclusive"
-        hypothesis_external_confidence = 0.74 if external_results else 0.35
-        hypothesis_accounting_status = "rejected" if likely_anomaly else "inconclusive"
-        hypothesis_accounting_confidence = 0.64 if likely_anomaly else 0.41
-
-        purchased_count = status_map.get("purchased", 0)
-        returned_count = status_map.get("returned", 0)
-        carted_count = status_map.get("carted", 0)
-        confidence_overall = 0.84 if internal_results and likely_anomaly else 0.67
+        hypothesis_deploy_status = (
+            "supported" if root_cause_text and commit_sha != "unknown_commit" else "inconclusive"
+        )
+        hypothesis_deploy_confidence = (
+            max(0.75, min(confidence_overall, 0.96))
+            if hypothesis_deploy_status == "supported"
+            else 0.48
+        )
+        hypothesis_external_status = "rejected" if top_infra_detail else "inconclusive"
+        hypothesis_external_confidence = 0.72 if hypothesis_external_status == "rejected" else 0.39
+        hypothesis_data_status = "supported" if top_log_line else "inconclusive"
+        hypothesis_data_confidence = 0.84 if hypothesis_data_status == "supported" else 0.44
 
         metric_summary = (
-            "Demo mode: structured SQL and internal communication signals indicate a checkout "
-            "and operations incident coinciding with the revenue dip."
+            "Demo mode: incident telemetry, logs, deploy metadata, and internal comms indicate "
+            f"an application-level regression in {service_name}."
         )
         root_cause = (
-            "Most likely root cause is a UK checkout regression after release combined with "
-            "shipping/logistics delays, supported by internal incident chatter and external context."
+            root_cause_text
+            or (
+                f"{service_name} started returning HTTP 500 on {endpoint} after deploy {deploy_id} "
+                f"({commit_sha}) due to a serializer null dereference."
+            )
         )
         brief = (
-            f"{metric_summary} Structured events show purchased={purchased_count}, "
-            f"returned={returned_count}, carted={carted_count}. "
+            f"{metric_summary} Deploy {deploy_id} / commit {commit_sha} is the strongest suspect. "
+            f"Endpoint impacted: {endpoint}. "
             f"Top internal signal: {top_internal_text or 'No internal message match found.'} "
-            f"External signal: {top_external_title or 'No external headline found; using mock/local context.'}"
+            f"Cloud context: {top_infra_detail or top_external_title or 'No active cloud outage signal detected.'}"
         )
 
         return {
@@ -521,20 +517,22 @@ class DiagnosticOrchestrator:
             "brief": brief,
             "hypotheses": [
                 {
-                    "name": "Checkout regression introduced in latest release impacted UK conversion.",
-                    "status": hypothesis_checkout_status,
-                    "confidence": hypothesis_checkout_confidence,
+                    "name": "Latest deploy introduced an application regression that caused HTTP 500s.",
+                    "status": hypothesis_deploy_status,
+                    "confidence": hypothesis_deploy_confidence,
                     "evidence": [
                         f"Internal matches found: {len(internal_results)}",
-                        top_internal_text or "No direct checkout incident message was matched.",
+                        f"Deploy: {deploy_id} ({commit_sha})",
+                        top_log_line or "No direct stack trace was found in incident logs.",
                     ],
                 },
                 {
-                    "name": "Regional logistics disruption amplified revenue softness.",
+                    "name": "Cloud provider outage is the primary cause.",
                     "status": hypothesis_external_status,
                     "confidence": hypothesis_external_confidence,
                     "evidence": [
-                        top_external_title or "No external headline found in search output.",
+                        top_infra_detail or "No provider-status event found in incident context.",
+                        top_external_title or "No external status headline found in search output.",
                         (
                             str(external_news.get("answer", ""))
                             if isinstance(external_news, dict)
@@ -543,35 +541,41 @@ class DiagnosticOrchestrator:
                     ],
                 },
                 {
-                    "name": "Pure accounting anomaly with no operational trigger.",
-                    "status": hypothesis_accounting_status,
-                    "confidence": hypothesis_accounting_confidence,
+                    "name": "Root cause is visible in logs/traces and can be fixed with a code patch.",
+                    "status": hypothesis_data_status,
+                    "confidence": hypothesis_data_confidence,
                     "evidence": [
-                        (
-                            str(variance.get("cfo_explanation", ""))
-                            if isinstance(variance, dict)
-                            else "Variance tool unavailable."
-                        ),
+                        top_log_line or "No stack trace evidence available.",
+                        f"Proposed branch: {incident_pr.get('branch', 'auto/fix-checkout-null-currency')}",
                     ],
                 },
             ],
             "most_likely_root_cause": root_cause,
             "confidence_overall": confidence_overall,
             "recommended_next_queries": [
-                "Run SQL by region and hour for checkout failures around release timestamp.",
-                "Correlate support ticket spikes with payment decline events and carrier delays.",
-                "Validate mitigation rollout impact on UK conversion over the next 6 hours.",
+                "Query error counts by endpoint and release version for the last 60 minutes.",
+                "Validate hotfix by replaying failing payload fixtures from incident logs.",
+                "Track p95 latency and 500 rate for 30 minutes after mitigation rollout.",
             ],
             "actions": [
-                "Prioritize summary brief for execs, then open deep-dive for engineering and operations.",
-                "Verify release rollback/hotfix impact against UK checkout conversion.",
-                "Audit carrier SLA breaches and reroute impacted shipments where possible.",
+                (
+                    f"Create PR draft '{incident_pr.get('title', 'Guard null currency metadata in serializer')}' "
+                    f"on branch {incident_pr.get('branch', 'auto/fix-checkout-null-currency')}."
+                ),
+                "Enable rollback/fallback flag immediately to reduce customer impact.",
+                (
+                    "Send proactive incident update: "
+                    + str(
+                        incident_context.get(
+                            "proactive_message_template",
+                            "Service degradation detected, mitigation in progress.",
+                        )
+                    )
+                ),
             ],
             "tool_outputs": {
-                "sql_status": sql_status,
-                "sql_revenue": sql_revenue,
+                "incident_context": incident_context,
                 "internal_signals": internal_signals,
-                "variance": variance,
                 "external_news": external_news,
                 "graph_context": graph_context,
                 "local_context": local_context,
@@ -591,7 +595,7 @@ class DiagnosticOrchestrator:
         return {
             "source": "local_fallback",
             "metric_summary": (
-                "Model providers unavailable; using latest local system-of-record summary."
+                "Model providers unavailable; using local incident/context fallback data."
             ),
             "hypotheses": [
                 {
@@ -604,7 +608,7 @@ class DiagnosticOrchestrator:
                 }
             ],
             "most_likely_root_cause": (
-                "Unable to complete model reasoning due to provider failures; check quota/rate limits."
+                "Unable to complete model reasoning due to provider failures; verify model quotas and retry."
             ),
             "confidence_overall": 0.0,
             "recommended_next_queries": [

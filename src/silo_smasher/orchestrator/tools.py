@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -79,6 +80,23 @@ class DiagnosticToolRuntime:
 
     def _init_tools(self) -> None:
         self._tool_map = {
+            "get_incident_context_snapshot": ToolSpec(
+                name="get_incident_context_snapshot",
+                description=(
+                    "Load deterministic incident context (service metadata, deploy info, logs, "
+                    "traces, infra events, and proposed remediation PR details)."
+                ),
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "include_logs": {"type": "boolean"},
+                        "max_log_lines": {"type": "integer", "minimum": 1, "maximum": 40},
+                        "include_cloud_events": {"type": "boolean"},
+                    },
+                    "additionalProperties": False,
+                },
+                handler=self._get_incident_context_snapshot,
+            ),
             "query_graph_connections": ToolSpec(
                 name="query_graph_connections",
                 description=(
@@ -357,6 +375,75 @@ class DiagnosticToolRuntime:
                 "fallback_reason": str(exc),
                 "local_context": fallback,
             }
+
+    def _get_incident_context_snapshot(self, arguments: dict[str, Any]) -> dict[str, Any]:
+        include_logs = bool(arguments.get("include_logs", True))
+        include_cloud_events = bool(arguments.get("include_cloud_events", True))
+        max_log_lines = int(arguments.get("max_log_lines", 8))
+        max_log_lines = max(1, min(max_log_lines, 40))
+
+        configured_path = os.getenv(
+            "INCIDENT_CONTEXT_PATH",
+            "data/incident/http_500_after_deploy.json",
+        )
+        context_path = Path(configured_path).expanduser()
+        if not context_path.exists():
+            return {
+                "error": f"Incident context not found: {context_path}",
+                "source": "local_incident_context",
+            }
+
+        try:
+            payload = json.loads(context_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            return {
+                "error": f"Failed to read incident context: {exc}",
+                "source": "local_incident_context",
+                "context_path": str(context_path),
+            }
+
+        if not isinstance(payload, dict):
+            return {
+                "error": "Incident context must be a JSON object.",
+                "source": "local_incident_context",
+                "context_path": str(context_path),
+            }
+
+        log_excerpt = payload.get("log_excerpt", [])
+        if not isinstance(log_excerpt, list):
+            log_excerpt = []
+        logs = [str(line) for line in log_excerpt if str(line).strip()]
+        if include_logs:
+            logs = logs[:max_log_lines]
+        else:
+            logs = []
+
+        infra_events = payload.get("infra_events", [])
+        if not isinstance(infra_events, list):
+            infra_events = []
+        if not include_cloud_events:
+            infra_events = []
+
+        trace_evidence = payload.get("trace_evidence", [])
+        if not isinstance(trace_evidence, list):
+            trace_evidence = []
+
+        return {
+            "source": "local_incident_context",
+            "context_path": str(context_path.resolve()),
+            "scenario_id": payload.get("scenario_id"),
+            "default_question": payload.get("default_question"),
+            "service": payload.get("service", {}),
+            "timeline": payload.get("timeline", []),
+            "metrics": payload.get("metrics", {}),
+            "deploy": payload.get("deploy", {}),
+            "analysis": payload.get("analysis", {}),
+            "log_excerpt": logs,
+            "trace_evidence": trace_evidence[:5],
+            "infra_events": infra_events[:5],
+            "proposed_pr": payload.get("proposed_pr", {}),
+            "proactive_message_template": payload.get("proactive_message_template"),
+        }
 
     def _get_senso_content(self, arguments: dict[str, Any]) -> dict[str, Any]:
         content_id = str(arguments.get("content_id", "")).strip()

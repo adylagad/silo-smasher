@@ -54,11 +54,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Autonomous Diagnostic Engine",
+    title="Autonomous Incident Engineering Engine",
     description=(
-        "Graph-Augmented Agentic BI — cross-silo root-cause investigator. "
-        "Correlates structured DB data, internal graph context, and external signals "
-        "to answer *why* a business metric changed."
+        "Graph-augmented incident response assistant for engineering/support teams. "
+        "Correlates logs, deploy metadata, internal comms, graph context, and external signals "
+        "to explain *why* services degrade and what to fix next."
     ),
     version="0.1.0",
     lifespan=lifespan,
@@ -138,12 +138,12 @@ def health() -> dict[str, Any]:
 
 @app.post("/diagnose", tags=["Diagnosis"])
 def diagnose(request: DiagnoseRequest) -> dict[str, Any]:
-    """Run the full agentic diagnostic loop and return the root-cause brief.
+    """Run the full incident-investigation loop and return a root-cause brief.
 
     The orchestrator:
     1. Generates hypotheses.
-    2. Uses tools (SQL, Neo4j GraphRAG, internal communications, Senso, Numeric, Tavily, Modulate, Yutori) to test them.
-    3. Returns a structured executive brief with confidence scores.
+    2. Uses tools (incident snapshot, SQL, Neo4j GraphRAG, internal comms, Senso, Tavily, Modulate, Yutori) to test them.
+    3. Returns a structured brief with confidence scores and mitigation actions.
 
     The result is also persisted to S3 as a memory-log entry.
     """

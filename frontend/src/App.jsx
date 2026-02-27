@@ -80,7 +80,7 @@ export default function App() {
                   <input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask: why did revenue drop?"
+                    placeholder="Ask: why did checkout start returning 500?"
                     className="flex-1 h-10 rounded-xl border border-slate-400/25 bg-[#0a1625]/85 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-300/50"
                   />
                   <button

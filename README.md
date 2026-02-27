@@ -1,23 +1,23 @@
 # Silo Smasher
 
-**Autonomous Root-Cause Investigator** — Graph-Augmented Agentic BI.
+**Autonomous Incident Engineer** — Graph-Augmented Incident Response.
 
-Current tools show *what* changed. Silo Smasher explains *why*.
+Traditional monitoring tells you *that* something broke. Silo Smasher explains *why* and what to do next.
 
-When a metric drops, the agent generates hypotheses and autonomously tests them by correlating three types of evidence that no existing BI tool combines:
+When a service starts returning HTTP 500, the agent generates hypotheses and tests them by correlating evidence across systems:
 
-1. **Structured data** (SQL / Airbyte syncs) — "Sales dropped 20% in the UK."
-2. **Internal graph context** (Neo4j — Customer → Order → SupportTicket chains) — "80% of the drop is from a specific shipping partner."
-3. **External signals** (Tavily news search) — "UK postal strike started this morning."
+1. **Structured data** (SQL / telemetry) — "500/min jumped 20x after deploy."
+2. **Internal incident context** (logs, deploy metadata, traces, comms) — "Commit `9f3c1b7` introduced a null dereference."
+3. **External signals** (cloud/provider status) — "No regional outage, so likely app regression."
 
-Final output: a confidence-scored executive brief with the most likely root cause and recommended next steps.
+Final output: a confidence-scored incident brief with root cause, mitigation actions, and PR draft direction.
 
 ---
 
-## Architecture — The Silo Smasher Stack
+## Architecture — The Incident Stack
 
 ```
-Airbyte ──► Context Normaliser ──► Senso (System of Record)
+Airbyte / Incident Snapshot ──► Context Normaliser ──► Senso (System of Record)
                                         │
                               Neo4j AuraDB GraphRAG
                               (AWS Bedrock embeddings)
@@ -28,7 +28,7 @@ Airbyte ──► Context Normaliser ──► Senso (System of Record)
             (Guardrails)            Orchestrator       (Web Navigation)
                     │                   │                    │
                 Numeric              Tavily             Modulate
-            (Finance Variance)   (External News)    (Voice Interface)
+             (Risk Lens)       (Cloud/World Status) (Voice Interface)
                                         │
                               FastAPI REST API
                                         │
@@ -128,15 +128,21 @@ sqlite3 data/system_of_record/sqlite/commerce.db \
 ### 2c. Validate internal unstructured signals (optional)
 
 The easiest internal-signal path is already wired with synthetic messages in:
-`data/internal_signals/slack_messages.json`
+`data/internal_signals/incident_war_room_messages.json`
 
 The orchestrator can search this through `search_internal_communications` with no API key.
 
-### 3. Run a diagnostic investigation
+### 3. Run an incident investigation
 
 ```bash
 run-diagnostic-orchestrator \
-  --question "Sales are down 12% week-over-week. Why?"
+  --question "Checkout API started returning HTTP 500 after deploy. Find root cause and mitigation."
+```
+
+### 3b. Run deterministic incident demo
+
+```bash
+python demo/run_incident_demo.py
 ```
 
 ### 4. Start the REST API
@@ -151,7 +157,7 @@ uvicorn api.main:app --reload
 ```bash
 curl -X POST http://localhost:8000/pipeline \
   -H "Content-Type: application/json" \
-  -d '{"question": "Why did MRR drop 15%?"}'
+  -d '{"question": "Why did checkout-api start returning HTTP 500 after deploy?"}'
 ```
 
 ### 6. Start proactive monitoring (trigger instead of pull)
@@ -234,15 +240,15 @@ Push to GitHub, connect repo in [render.com](https://render.com). `render.yaml` 
 | Sponsor | Role | Module |
 |---|---|---|
 | **Airbyte** | Data pipeline — pulls records from any source | `synthetic_sync.py` |
-| **Neo4j** | Knowledge graph — Customer→Order→SupportTicket traversal | `graph/` |
+| **Neo4j** | Knowledge graph — Service→Deploy→Incident→Ticket traversal context | `graph/` |
 | **OpenAI** | Primary orchestrator (GPT-4o) | `orchestrator/agent.py` |
 | **Gemini** | Fallback orchestrator | `orchestrator/agent.py` |
 | **Fastino** | Guardrails — PII redaction + action safety | `guardrails/` |
 | **Yutori** | Web navigation — internal portal PDF extraction | `web_navigation/` |
-| **Numeric** | Finance variance — seasonal vs anomaly classification | `finance/` |
-| **Tavily** | External news search — real-world economic signals | `market_signals/` |
+| **Numeric** | Risk lens — anomaly framing when impact severity is unclear | `finance/` |
+| **Tavily** | External status/news search — cloud/vendor context | `market_signals/` |
 | **Modulate** | Voice interface — intent/emotion → summary vs deep-dive | `voice_interface/` |
 | **Senso** | System-of-record — verified ground-truth context | `senso/` |
-| **Internal Signals (Local)** | Synthetic Slack/Jira unstructured context for cross-silo correlation | `internal_signals/`, `data/internal_signals/slack_messages.json` |
+| **Internal Signals (Local)** | Synthetic incident war-room messages for engineering correlation | `internal_signals/`, `data/internal_signals/incident_war_room_messages.json` |
 | **AWS** | Bedrock embeddings + S3 memory + Step Functions pipeline | `graph/`, `memory/`, `aws/` |
 | **Render** | API hosting | `Dockerfile`, `render.yaml` |
